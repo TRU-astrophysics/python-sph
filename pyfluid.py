@@ -3,12 +3,11 @@ import math
 
 # NOTE: Need to create an array of masses if we want differing particle masses
 # ALL FUNCTIONS currently assume uniform masses
-mi = 1
-# NOTE: Must remove this definition of h and refactor all functions that take h as a parameter
-h = 1
+PARTICLE_MASS = 1
+INITIAL_H = 1
 # Coupling constant is eta in Cossins's thesis (see 3.98)
-coupling_const = 1.3
-epsilson = 1e-3
+COUPLING_CONST = 1.3
+SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-3
 # G in units of years, earth masses, AU 
 G = 4 * np.pi
 
@@ -30,12 +29,12 @@ def omegaj(j, hj, positions, densityj):
     sum = 0
     for i in range(positions.shape[0]):
         dist = distance(positions[j], positions[i])
-        sum += mi * M4_h_derivative(dist, hj)
+        sum += PARTICLE_MASS * M4_h_derivative(dist, hj)
     
     return 1 + hj/(3 * densityj) * sum
 
 
-def M4(dist):
+def M4(dist, h):
     q = dist/h
     w = (1/np.pi*h**3)*np.piecewise(q, 
                                     [q >= 2, q >= 1 and q < 2, q < 1], 
@@ -43,7 +42,7 @@ def M4(dist):
     
     return w
 
-def M4_d1(dist):
+def M4_d1(dist, h):
     q = dist/h
     wp = (1/math.pi*h**4)*np.piecewise(q, 
                                        [q >= 2, q >= 1 and q < 2, q < 1], 
@@ -51,7 +50,7 @@ def M4_d1(dist):
     
     return wp
 
-def M4_d2(dist):
+def M4_d2(dist, h):
     q = dist/h
     ## should have some coeff
     wpp = np.piecewise(q, 
@@ -66,27 +65,60 @@ def dellM4(rj, ri):
 # Cossins 3.107
 def M4_h_derivative(dist, h):
     x = dist/h
-    return -x*M4_d1(dist) - 3/h * M4(dist)
+    return -x*M4_d1(dist, h) - 3/h * M4(dist, h)
 
 
-# New & improved density – see Cossins 3.112 - 3.115
-def zeta(j, hj, positions):
+# New & improved density
+# Cossins 3.98
+def var_density(h):
+    return PARTICLE_MASS * (COUPLING_CONST/h)**3
+
+# Cossins 3.112 - 3.115
+def zetaj(j, hj, positions):
     sum = 0
     
-    return mi * (coupling_const/hj)**3 - density(positions[j], positions)
+    return PARTICLE_MASS * (COUPLING_CONST/hj)**3 - density(positions[j], positions)
 
-# Don't really zetaprime
+# Don't really need zetaprime
 def zetaprime(densityj, omegaj, hj):
     return -3 * densityj * omegaj / hj
 
 def new_h(old_h, zeta, density, omega):
     return old_h * (1 + zeta/(3 * density * omega))
 
+def smoothlength_variation(h_new, h_old):
+    return np.abs(h_new - h_old)/h_old
+
+def newton_h_iteration(j, positions, old_hj):
+    new_denj = var_density(old_hj)
+    omega = omegaj(j, old_hj, positions, new_denj)
+    zeta = zetaj(j, old_hj, positions)
+    new_hj = new_h(old_hj, zeta, new_denj, omega)
+
+    return new_hj
+
+# Use INITIAL_H as old_hj when using in code
+def newton_h(j, positions, old_hj, old_old_hj):
+    new_hj = newton_h_iteration(j, positions, old_hj)
+    
+# Can't get the convergence failure warning to work, it goes off every time. 
+    '''
+    if smoothlength_variation(new_hj, old_hj) > smoothlength_variation(old_hj, old_old_hj):
+        print("ERROR: failure to converge")
+        return
+    '''    
+    
+    if smoothlength_variation(new_hj, old_hj) < SMOOTHLENGTH_VARIATION_TOLERANCE:
+        return new_hj
+    
+    else:
+        new_hj = newton_h(j, positions, new_hj, old_hj)
+        return new_hj
 
 
 # Old density
 def density_comp(rj, ri):
-    return mi*M4(distance(ri, rj))
+    return PARTICLE_MASS*M4(distance(ri, rj), INITIAL_H)
 
 def density(rj, positions):
     rho_j = 0
@@ -121,7 +153,7 @@ def energy_evolve(j, positions, vels, engs, pressures, dens, dt):
     deltaDenj = 0
     
     for i in range(vels.shape[0]):
-        deltaDenj += mi * np.dot(vels[j] - vels[i], dellM4(positions[i], positions[j]))
+        deltaDenj += PARTICLE_MASS * np.dot(vels[j] - vels[i], dellM4(positions[i], positions[j]))
     
     delta_energy = pressures[j] / dens[j]**2 * deltaDenj
     
@@ -136,7 +168,7 @@ def energy_evolve_arr(positions, vels, engs0, pressures, dens, dt):
     return engs1
 
 
-def grav_potential(dist):
+def grav_potential(dist, h):
     x = dist/h
     return np.piecewise(x, 
                         [x < 1,
@@ -146,7 +178,7 @@ def grav_potential(dist):
                          1/h * (4/3*x**2 - x**3 + 3/10*x**4 - 1/30*x**5 - 8/5 + 1/(15*x)),
                          -1/dist])    
 
-def grav_force(dist):
+def grav_force(dist, h):
     x = dist/h
     return np.piecewise(x, 
                         [x < 1,
@@ -161,7 +193,7 @@ def smoothed_gravity_acceleration_comp(j, i, positions):
     if np.array_equal(positions[j], positions[i]):
         return 0
 
-    return -G * mi * grav_force(distance(positions[j], positions[i])) * directionij(positions[j], positions[i])
+    return -G * PARTICLE_MASS * grav_force(distance(positions[j], positions[i])) * directionij(positions[j], positions[i])
 
 def basic_gravity_acceleration_comp(j, i, positions):
     
@@ -175,7 +207,7 @@ def fluid_acceleration_comp(j, i, positions, densities, pressures):
     if np.array_equal(positions[j], positions[i]):
         return 0
 
-    return -mi*(pressures[j]/densities[j]**2 + pressures[i]/densities[i]**2) * dellM4(positions[j], positions[i])
+    return -PARTICLE_MASS*(pressures[j]/densities[j]**2 + pressures[i]/densities[i]**2) * dellM4(positions[j], positions[i])
 
 def acceleration(j, positions, densities, pressures):
     acc = np.array([0., 0., 0.])
@@ -193,7 +225,8 @@ def acceleration_arr(positions, densities, pressures):
 
     return acc_arr
 
-# From equation 3.151 in Pete Cossin's thesis
+
+# Cossins 3.151
 def leapfrog(pos0, vel0, energy0, dt):
 
     den0 =      density_arr(pos0)
