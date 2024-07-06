@@ -1,9 +1,15 @@
 import numpy as np
 import math 
 
+# NOTE: Need to create an array of masses if we want differing particle masses
+# ALL FUNCTIONS currently assume uniform masses
 mi = 1
+# NOTE: Must remove this definition of h and refactor all functions that take h as a parameter
 h = 1
-# G in units of 100,000 yrs, 1,000 earth masses, AU 
+# Coupling constant is eta in Cossins's thesis (see 3.98)
+coupling_const = 1.3
+epsilson = 1e-3
+# G in units of years, earth masses, AU 
 G = 4 * np.pi
 
 def distance(rj, ri):
@@ -18,6 +24,15 @@ def directionij(rj, ri):
         return np.zeros(3)
 
     return (rj-ri)/distance(rj, ri)
+
+# Cossins 3.106
+def omegaj(j, hj, positions, densityj):
+    sum = 0
+    for i in range(positions.shape[0]):
+        dist = distance(positions[j], positions[i])
+        sum += mi * M4_h_derivative(dist, hj)
+    
+    return 1 + hj/(3 * densityj) * sum
 
 
 def M4(dist):
@@ -45,10 +60,31 @@ def M4_d2(dist):
     
     return wpp
 
-def dellM4(rj, ri):  
+def dellM4(rj, ri):
     return M4_d1(distance(rj, ri)) * directionij(rj, ri)
 
+# Cossins 3.107
+def M4_h_derivative(dist, h):
+    x = dist/h
+    return -x*M4_d1(dist) - 3/h * M4(dist)
 
+
+# New & improved density – see Cossins 3.112 - 3.115
+def zeta(j, hj, positions):
+    sum = 0
+    
+    return mi * (coupling_const/hj)**3 - density(positions[j], positions)
+
+# Don't really zetaprime
+def zetaprime(densityj, omegaj, hj):
+    return -3 * densityj * omegaj / hj
+
+def new_h(old_h, zeta, density, omega):
+    return old_h * (1 + zeta/(3 * density * omega))
+
+
+
+# Old density
 def density_comp(rj, ri):
     return mi*M4(distance(ri, rj))
 
