@@ -165,7 +165,7 @@ def energy_evolve_arr(positions, vels, engs0, pressures, dens, dt):
     
     return engs1
 
-
+# Gravity
 def grav_potential(dist, h):
     x = dist/h
     return np.piecewise(x, 
@@ -182,9 +182,20 @@ def grav_force(dist, h):
                         [x < 1,
                          x >= 1 and x < 2,
                          x >= 2],
-                        [1/h**2 * (4/3*x - 6/5*x**3 + 0.5*x**4), 
-                         1/h**2 * (8/3*x - 3*x**2 + 6/5*x**3 - 1/6*x**4 - 1/(15*x**2)),
-                         1/dist**2]) 
+                        [1/(h**2) * (4/3*x - 6/5*x**3 + 0.5*x**4), 
+                         1/(h**2) * (8/3*x - 3*x**2 + 6/5*x**3 - 1/6*x**4 - 1/(15*x**2)),
+                         1/(dist**2)]) 
+
+# Note: This might be wrong. I just quickly did the calculus in my head, so it ought to be looked over more thoroughly. 
+def grav_potential_h_derivative(dist, h):
+    x = dist/h
+    return np.piecewise(x, 
+                        [x < 1,
+                         x >= 1 and x < 2,
+                         x >= 2],
+                        [-1/(h**2) * (2*x**2 - 12/10*x**3 + 6/10*x**5 - 7/5), 
+                         -1/(h**2) * (4*x**2 - 4*x**3 + 3/2*x**4 - 1/5*x**5 - 8/5 + 1/(15*x)) + 1/(15*dist*h),
+                         0])
 
 def smoothed_gravity_acceleration_comp(j, i, positions):
     
@@ -200,6 +211,8 @@ def basic_gravity_acceleration_comp(j, i, positions):
     
     return -directionij(positions[j], positions[i]) * G/distance(positions[j], positions[i])**2
 
+
+# Acceleration
 def fluid_acceleration_comp(j, i, positions, densities, pressures):
     
     if np.array_equal(positions[j], positions[i]):
