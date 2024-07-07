@@ -75,9 +75,7 @@ def var_density(h):
 
 # Cossins 3.112 - 3.115
 def zetaj(j, hj, positions):
-    sum = 0
-    
-    return PARTICLE_MASS * (COUPLING_CONST/hj)**3 - density(positions[j], positions)
+    return PARTICLE_MASS * (COUPLING_CONST/hj)**3 - density(positions[j], positions, hj)
 
 # Don't really need zetaprime
 def zetaprime(densityj, omegaj, hj):
@@ -117,22 +115,22 @@ def newton_h(j, positions, old_hj, old_old_hj):
 
 
 # Old density
-def density_comp(rj, ri):
-    return PARTICLE_MASS*M4(distance(ri, rj), INITIAL_H)
+def density_comp(rj, ri, h):
+    return PARTICLE_MASS*M4(distance(ri, rj), h)
 
-def density(rj, positions):
+def density(rj, positions, h):
     rho_j = 0
     
     for i in range(positions.shape[0]):
-        rho_j += density_comp(rj, positions[i])
+        rho_j += density_comp(rj, positions[i], h)
 
     return rho_j
 
-def density_arr(positions):
+def density_arr(positions, h_arr):
     density_arr = np.zeros(positions.shape[0])
     
     for i in range(positions.shape[0]):
-        density_arr[i] = density(positions[i], positions)
+        density_arr[i] = density(positions[i], positions, h_arr[i])
 
     return density_arr
 
