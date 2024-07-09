@@ -24,16 +24,6 @@ def directionij(rj, ri):
 
     return (rj-ri)/distance(rj, ri)
 
-# Cossins 3.106
-def omegaj(j, hj, positions, densityj):
-    sum = 0
-    for i in range(positions.shape[0]):
-        dist = distance(positions[j], positions[i])
-        sum += PARTICLE_MASS * M4_h_derivative(dist, hj)
-    
-    return 1 + hj/(3 * densityj) * sum
-
-
 def M4(dist, h):
     q = dist/h
     w = (1/np.pi*h**3)*np.piecewise(q, 
@@ -72,6 +62,15 @@ def M4_h_derivative(dist, h):
 # Cossins 3.98
 def var_density(h):
     return PARTICLE_MASS * (COUPLING_CONST/h)**3
+
+# Cossins 3.106
+def omegaj(j, hj, positions, denj):
+    sum = 0
+    for i in range(positions.shape[0]):
+        dist = distance(positions[j], positions[i])
+        sum += PARTICLE_MASS * M4_h_derivative(dist, hj)
+    
+    return 1 + hj/(3 * denj) * sum
 
 # Cossins 3.112 - 3.115
 def zetaj(j, hj, positions):
@@ -172,7 +171,7 @@ def grav_potential(dist, h):
                         [x < 1,
                          x >= 1 and x < 2,
                          x >= 2],
-                        [1/h * (2/3*x**2 - 3/10*x**3 + 0.1*x**5 -7/5), 
+                        [1/h * (2/3*x**2 - 3/10*x**3 + 1/10*x**5 - 7/5), 
                          1/h * (4/3*x**2 - x**3 + 3/10*x**4 - 1/30*x**5 - 8/5 + 1/(15*x)),
                          -1/dist])    
 
@@ -182,7 +181,7 @@ def grav_force(dist, h):
                         [x < 1,
                          x >= 1 and x < 2,
                          x >= 2],
-                        [1/(h**2) * (4/3*x - 6/5*x**3 + 0.5*x**4), 
+                        [1/(h**2) * (4/3*x - 6/5*x**3 + 1/2*x**4), 
                          1/(h**2) * (8/3*x - 3*x**2 + 6/5*x**3 - 1/6*x**4 - 1/(15*x**2)),
                          1/(dist**2)]) 
 
@@ -194,8 +193,15 @@ def grav_potential_h_derivative(dist, h):
                          x >= 1 and x < 2,
                          x >= 2],
                         [-1/(h**2) * (2*x**2 - 12/10*x**3 + 6/10*x**5 - 7/5), 
-                         -1/(h**2) * (4*x**2 - 4*x**3 + 3/2*x**4 - 1/5*x**5 - 8/5 + 1/(15*x)) + 1/(15*dist*h),
+                         -1/(h**2) * (4*x**2 - 4*x**3 + 3/2*x**4 - 1/5*x**5 - 8/5),
                          0])
+
+def xi(j, hj, denj, positions):
+    sum  = 0
+    for i in range(positions.shape[0]):
+        dist = distance(positions[j], positions[i])
+        sum += PARTICLE_MASS * grav_potential_h_derivative(dist, hj)
+    return - hj/(3*denj) * sum
 
 def smoothed_gravity_acceleration_comp(j, i, positions):
     
