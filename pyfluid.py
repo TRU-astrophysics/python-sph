@@ -4,7 +4,7 @@ import math
 # NOTE: Need to create an array of masses if we want differing particle masses
 # ALL FUNCTIONS currently assume uniform masses
 PARTICLE_MASS = 1
-INITIAL_H = 1
+INITIAL_H = 2
 # Coupling constant is eta in Cossins's thesis (see 3.98)
 COUPLING_CONST = 1.3
 SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-3
@@ -49,8 +49,8 @@ def M4_d2(dist, h):
     
     return wpp
 
-def dellM4(rj, ri):
-    return M4_d1(distance(rj, ri)) * directionij(rj, ri)
+def dellM4(rj, ri, h):
+    return M4_d1(distance(rj, ri), h) * directionij(rj, ri)
 
 # Cossins 3.107
 def M4_h_derivative(dist, h):
@@ -146,21 +146,21 @@ def pressure_arr(energies, densities):
     return pressure_arr
 
 # PR: energy is currently just evolved w/ Euler integration - maybe not ideal?
-def energy_evolve(j, positions, vels, engs, pressures, dens, dt):
+def energy_evolve(j, positions, vels, engs, pressures, dens, h, dt):
     deltaDenj = 0
     
     for i in range(vels.shape[0]):
-        deltaDenj += PARTICLE_MASS * np.dot(vels[j] - vels[i], dellM4(positions[i], positions[j]))
+        deltaDenj += PARTICLE_MASS * np.dot(vels[j] - vels[i], dellM4(positions[i], positions[j], h))
     
     delta_energy = pressures[j] / dens[j]**2 * deltaDenj
     
     return engs[j] + delta_energy * dt
 
-def energy_evolve_arr(positions, vels, engs0, pressures, dens, dt):
+def energy_evolve_arr(positions, vels, engs0, pressures, dens, h_arr, dt):
     engs1 = np.zeros(positions.shape[0])
     
     for i in range(positions.shape[0]):
-        engs1[i] = energy_evolve(i, positions, vels, engs0, pressures, dens, dt)
+        engs1[i] = energy_evolve(i, positions, vels, engs0, pressures, dens, h_arr[i], dt)
     
     return engs1
 
@@ -203,12 +203,12 @@ def xi(j, hj, denj, positions):
         sum += PARTICLE_MASS * grav_potential_h_derivative(dist, hj)
     return - hj/(3*denj) * sum
 
-def smoothed_gravity_acceleration_comp(j, i, positions):
+def smoothed_gravity_acceleration_comp(j, i, positions, hj):
     
     if np.array_equal(positions[j], positions[i]):
         return 0
 
-    return -G * PARTICLE_MASS * grav_force(distance(positions[j], positions[i])) * directionij(positions[j], positions[i])
+    return -G * PARTICLE_MASS * grav_force(distance(positions[j], positions[i]), hj) * directionij(positions[j], positions[i])
 
 def basic_gravity_acceleration_comp(j, i, positions):
     
@@ -219,42 +219,43 @@ def basic_gravity_acceleration_comp(j, i, positions):
 
 
 # Acceleration
-def fluid_acceleration_comp(j, i, positions, densities, pressures):
+def fluid_acceleration_comp(j, i, positions, densities, pressures, hj):
     
     if np.array_equal(positions[j], positions[i]):
         return 0
 
-    return -PARTICLE_MASS*(pressures[j]/densities[j]**2 + pressures[i]/densities[i]**2) * dellM4(positions[j], positions[i])
+    return -PARTICLE_MASS*(pressures[j]/densities[j]**2 + pressures[i]/densities[i]**2) * dellM4(positions[j], positions[i], hj)
 
-def acceleration(j, positions, densities, pressures):
+def acceleration(j, positions, densities, pressures, h_arr):
     acc = np.array([0., 0., 0.])
 
     for i in range(positions.shape[0]):
-        acc += (fluid_acceleration_comp(j, i, positions, densities, pressures) + smoothed_gravity_acceleration_comp(j, i, positions))
+        acc += (fluid_acceleration_comp(j, i, positions, densities, pressures, h_arr[j]) + smoothed_gravity_acceleration_comp(j, i, positions, h_arr[j]))
 
     return acc
 
-def acceleration_arr(positions, densities, pressures):
+def acceleration_arr(positions, densities, pressures, h_arr):
     acc_arr = np.zeros((positions.shape[0], 3))
     
     for i in range(positions.shape[0]):
-        acc_arr[i] = acceleration(i, positions, densities, pressures)
+        acc_arr[i] = acceleration(i, positions, densities, pressures, h_arr)
 
     return acc_arr
 
 
 # Cossins 3.151
-def leapfrog(pos0, vel0, energy0, dt):
+def static_h_leapfrog(pos0, vel0, energy0, dt):
+    static_h_arr = INITIAL_H*np.ones(pos0.shape[0])
 
-    den0 =      density_arr(pos0)
+    den0 =      density_arr(pos0, static_h_arr)
     press0 =    pressure_arr(energy0, den0)
-    acc0 =      acceleration_arr(pos0, den0, press0)
+    acc0 =      acceleration_arr(pos0, den0, press0, static_h_arr)
     pos1 = pos0 + vel0*dt + 0.5*acc0*dt**2
 
-    energy1 =   energy_evolve_arr(pos0, vel0, energy0, press0, den0, dt)
-    den1 =      density_arr(pos1)
+    energy1 =   energy_evolve_arr(pos0, vel0, energy0, press0, den0, static_h_arr, dt)
+    den1 =      density_arr(pos1, static_h_arr)
     press1 =    pressure_arr(energy1, den1)
-    acc1 =      acceleration_arr(pos1, den1, press1)
+    acc1 =      acceleration_arr(pos1, den1, press1, static_h_arr)
     vel1 = vel0 + 0.5*(acc0 + acc1)*dt
 
     return pos1, vel1, energy1
@@ -274,8 +275,8 @@ def rk2(r0, positions, v0, dt):
 
     return r2, v2
 
-def sim(time, positions_with_time, velocities_with_time, energies_with_time):
+def static_h_sim(time, positions_with_time, velocities_with_time, energies_with_time):
     dt = time[1] - time[0]
 
     for t in range(len(time)-1):
-        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1] = leapfrog(positions_with_time[:, :, t], velocities_with_time[:, :, t], energies_with_time[:, t], dt)
+        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1] = static_h_leapfrog(positions_with_time[:, :, t], velocities_with_time[:, :, t], energies_with_time[:, t], dt)
