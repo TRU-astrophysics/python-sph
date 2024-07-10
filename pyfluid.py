@@ -63,6 +63,13 @@ def M4_h_derivative(dist, h):
 def var_density(h):
     return PARTICLE_MASS * (COUPLING_CONST/h)**3
 
+def var_density_arr(h_arr):
+    density_arr = np.zeros(len(h_arr))
+    for i in range(len(h_arr)):
+        density_arr[i] = var_density(h_arr[i])
+    
+    return density_arr
+
 # Cossins 3.106
 def omegaj(j, hj, positions, denj):
     sum = 0
@@ -112,6 +119,12 @@ def newton_h(j, positions, old_hj, old_old_hj):
         new_hj = newton_h(j, positions, new_hj, old_hj)
         return new_hj
 
+def newton_h_arr(positions, old_h_arr):
+    h_arr = np.zeros(positions.shape[0])
+    for i in range(len(h_arr)):
+        h_arr[i] = newton_h(i, positions, old_h_arr[i])
+    
+    return h_arr
 
 # Old density
 def density_comp(rj, ri, h):
@@ -244,6 +257,35 @@ def acceleration_arr(positions, densities, pressures, h_arr):
 
 
 # Cossins 3.151
+def var_h_leapfrog(pos0, vel0, energy0, h_approx, dt):
+    h0 =        newton_h_arr(pos0, h_approx)
+    den0 =      var_density_arr(h0)
+    press0 =    pressure_arr(energy0, den0)
+    acc0 =      acceleration_arr(pos0, den0, press0, h0)
+    pos1 = pos0 + vel0*dt + 0.5*acc0*dt**2
+
+    h1 =        newton_h_arr(pos1, h0) 
+    # energy1 is (almost certainly) supposed to take h0, not h1! Don't change!
+    energy1 =   energy_evolve_arr(pos0, vel0, energy0, press0, den0, h0, dt)
+    den1 =      density_arr(pos1, h1)
+    press1 =    pressure_arr(energy1, den1)
+    acc1 =      acceleration_arr(pos1, den1, press1, h1)
+    vel1 = vel0 + 0.5*(acc0 + acc1)*dt
+
+    return pos1, vel1, energy1
+
+def var_h_sim(time, positions_with_time, velocities_with_time, energies_with_time, initial_h_with_time):
+    dt = time[1 - time[0]]
+
+    for t in range(len(time)-1):
+        positions_with_time[:, :, t+1], 
+        velocities_with_time[:, :, t+1], 
+        energies_with_time[:, t+1] = var_h_leapfrog(positions_with_time[:, :, t], 
+                                                       velocities_with_time[:, :, t], 
+                                                       energies_with_time[:, t], 
+                                                       initial_h_with_time[:, t],
+                                                       dt)
+
 def static_h_leapfrog(pos0, vel0, energy0, dt):
     static_h_arr = INITIAL_H*np.ones(pos0.shape[0])
 
@@ -260,7 +302,18 @@ def static_h_leapfrog(pos0, vel0, energy0, dt):
 
     return pos1, vel1, energy1
 
-# This is wrong; should be using new positions to calculate a1
+def static_h_sim(time, positions_with_time, velocities_with_time, energies_with_time):
+    dt = time[1] - time[0]
+
+    for t in range(len(time)-1):
+        positions_with_time[:, :, t+1], 
+        velocities_with_time[:, :, t+1], 
+        energies_with_time[:, t+1] = static_h_leapfrog(positions_with_time[:, :, t], 
+                                                       velocities_with_time[:, :, t], 
+                                                       energies_with_time[:, t], 
+                                                       dt)
+
+# RK2 is wrong; should be using new positions to calculate a1. We aren't using it anyways. 
 def rk2(r0, positions, v0, dt):
 
     a0 = acceleration(r0, positions)
@@ -274,9 +327,3 @@ def rk2(r0, positions, v0, dt):
     v2 = v0 + a1 * dt
 
     return r2, v2
-
-def static_h_sim(time, positions_with_time, velocities_with_time, energies_with_time):
-    dt = time[1] - time[0]
-
-    for t in range(len(time)-1):
-        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1] = static_h_leapfrog(positions_with_time[:, :, t], velocities_with_time[:, :, t], energies_with_time[:, t], dt)
