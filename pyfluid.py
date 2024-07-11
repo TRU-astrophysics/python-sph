@@ -7,7 +7,7 @@ PARTICLE_MASS = 1
 INITIAL_H = 2
 # Coupling constant is eta in Cossins's thesis (see 3.98)
 COUPLING_CONST = 1.3
-SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-3
+SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-2
 # G in units of years, earth masses, AU 
 G = 4 * np.pi
 
@@ -96,13 +96,14 @@ def smoothlength_variation(h_new, h_old):
 def newton_h_iteration(j, positions, old_hj):
     new_denj = var_density(old_hj)
     omega = omegaj(j, old_hj, positions, new_denj)
+    print(omega)
     zeta = zetaj(j, old_hj, positions)
     new_hj = new_h(old_hj, zeta, new_denj, omega)
 
     return new_hj
 
 # Use INITIAL_H as old_hj when using in code
-def newton_h(j, positions, old_hj, old_old_hj):
+def newton_h(j, positions, old_hj, old_old_hj=0):
     new_hj = newton_h_iteration(j, positions, old_hj)
     
 # Can't get the convergence failure warning to work, it goes off every time. 
@@ -275,16 +276,14 @@ def var_h_leapfrog(pos0, vel0, energy0, h_approx, dt):
     return pos1, vel1, energy1
 
 def var_h_sim(time, positions_with_time, velocities_with_time, energies_with_time, initial_h_with_time):
-    dt = time[1 - time[0]]
+    dt = time[1] - time[0]
 
     for t in range(len(time)-1):
-        positions_with_time[:, :, t+1], 
-        velocities_with_time[:, :, t+1], 
-        energies_with_time[:, t+1] = var_h_leapfrog(positions_with_time[:, :, t], 
-                                                       velocities_with_time[:, :, t], 
-                                                       energies_with_time[:, t], 
-                                                       initial_h_with_time[:, t],
-                                                       dt)
+        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1] = var_h_leapfrog(positions_with_time[:, :, t], 
+                                                                                                                     velocities_with_time[:, :, t], 
+                                                                                                                     energies_with_time[:, t], 
+                                                                                                                     initial_h_with_time[:, t],
+                                                                                                                     dt)
 
 def static_h_leapfrog(pos0, vel0, energy0, dt):
     static_h_arr = INITIAL_H*np.ones(pos0.shape[0])
@@ -306,12 +305,10 @@ def static_h_sim(time, positions_with_time, velocities_with_time, energies_with_
     dt = time[1] - time[0]
 
     for t in range(len(time)-1):
-        positions_with_time[:, :, t+1], 
-        velocities_with_time[:, :, t+1], 
-        energies_with_time[:, t+1] = static_h_leapfrog(positions_with_time[:, :, t], 
-                                                       velocities_with_time[:, :, t], 
-                                                       energies_with_time[:, t], 
-                                                       dt)
+        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1] = static_h_leapfrog(positions_with_time[:, :, t], 
+                                                                                                                        velocities_with_time[:, :, t], 
+                                                                                                                        energies_with_time[:, t], 
+                                                                                                                        dt)
 
 # RK2 is wrong; should be using new positions to calculate a1. We aren't using it anyways. 
 def rk2(r0, positions, v0, dt):
