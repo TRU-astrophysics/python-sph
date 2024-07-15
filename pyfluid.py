@@ -8,6 +8,7 @@ INITIAL_H = 2
 # Coupling constant is eta in Cossins's thesis (see 3.98)
 COUPLING_CONST = 1.3
 SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-2
+NEWTON_ITERATION_LIMIT = 10
 # G in units of years, earth masses, AU 
 G = 4 * np.pi
 
@@ -94,22 +95,36 @@ def smoothlength_variation(h_new, h_old):
     return np.abs(h_new - h_old)/h_old
 
 def newton_h_iteration(j, positions, old_hj):
-    new_denj = var_density(old_hj)
-    omega = omegaj(j, old_hj, positions, new_denj)
-    print(omega)
+    old_denj = density(positions[j], positions, old_hj)
+    omega = omegaj(j, old_hj, positions, old_denj)
     zeta = zetaj(j, old_hj, positions)
-    new_hj = new_h(old_hj, zeta, new_denj, omega)
+    new_hj = new_h(old_hj, zeta, old_denj, omega)
 
     return new_hj
 
 # Use INITIAL_H as old_hj when using in code
-def newton_h(j, positions, old_hj, old_old_hj=0):
+
+def newton_h_while(j, positions, initial_hj):
+    old_hj = initial_hj
+
+    i = 0
+    while i < NEWTON_ITERATION_LIMIT:
+        current_hj = newton_h_iteration(j, positions, current_hj)
+        if np.abs(current_hj - old_hj)/current_hj < SMOOTHLENGTH_VARIATION_TOLERANCE:
+            return current_hj
+        else:
+            old_hj = current_hj
+            i += 1
+    
+    print("Error: Failure to Converge in newton_h_while")
+
+def newton_h_recursive(j, positions, old_hj, old_old_hj=0):
     new_hj = newton_h_iteration(j, positions, old_hj)
     
 # Can't get the convergence failure warning to work, it goes off every time. 
     '''
     if smoothlength_variation(new_hj, old_hj) > smoothlength_variation(old_hj, old_old_hj):
-        print("ERROR: failure to converge")
+        print("Error: Failure to Converge in newton_h_recursive")
         return
     '''    
     
@@ -117,13 +132,13 @@ def newton_h(j, positions, old_hj, old_old_hj=0):
         return new_hj
     
     else:
-        new_hj = newton_h(j, positions, new_hj, old_hj)
+        new_hj = newton_h_while(j, positions, new_hj, old_hj)
         return new_hj
 
 def newton_h_arr(positions, old_h_arr):
     h_arr = np.zeros(positions.shape[0])
     for i in range(len(h_arr)):
-        h_arr[i] = newton_h(i, positions, old_h_arr[i])
+        h_arr[i] = newton_h_while(i, positions, old_h_arr[i])
     
     return h_arr
 
