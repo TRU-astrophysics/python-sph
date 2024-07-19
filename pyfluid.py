@@ -7,7 +7,7 @@ PARTICLE_MASS = 1
 INITIAL_H = 2
 # Coupling constant is eta in Cossins's thesis (see 3.98)
 COUPLING_CONST = 1.3
-SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-2
+SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-3
 NEWTON_ITERATION_LIMIT = 10
 # G in units of years, earth masses, AU 
 G = 4 * np.pi
@@ -82,35 +82,41 @@ def omegaj(j, hj, positions, denj):
 
 # Cossins 3.112 - 3.115
 def zetaj(j, hj, positions):
-    return PARTICLE_MASS * (COUPLING_CONST/hj)**3 - density(positions[j], positions, hj)
+    zeta = var_density(hj) - density(positions[j], positions, hj)
+    return zeta
 
 # Don't really need zetaprime
 def zetaprime(densityj, omegaj, hj):
     return -3 * densityj * omegaj / hj
 
 def new_h(old_h, zeta, density, omega):
-    return old_h * (1 + zeta/(3 * density * omega))
+    new_h = old_h * (1 + zeta/(3 * density * omega))
+    return new_h
 
-def smoothlength_variation(h_new, h_old):
-    return np.abs(h_new - h_old)/h_old
+def smoothlength_variation(new_h, old_h):
+    return np.abs(new_h - old_h)/old_h
 
 def newton_h_iteration(j, positions, old_hj):
     old_denj = density(positions[j], positions, old_hj)
+    print("Density:    " + str(old_denj))
     omega = omegaj(j, old_hj, positions, old_denj)
+    print("Omega:      " + str(omega))
     zeta = zetaj(j, old_hj, positions)
+    print("Zeta:      " + str(zeta))
     new_hj = new_h(old_hj, zeta, old_denj, omega)
+    print("Current hj: " + str(new_hj))
 
     return new_hj
 
 # Use INITIAL_H as old_hj when using in code
-
 def newton_h_while(j, positions, initial_hj):
     old_hj = initial_hj
 
     i = 0
     while i < NEWTON_ITERATION_LIMIT:
-        current_hj = newton_h_iteration(j, positions, current_hj)
-        if np.abs(current_hj - old_hj)/current_hj < SMOOTHLENGTH_VARIATION_TOLERANCE:
+        current_hj = newton_h_iteration(j, positions, old_hj)
+
+        if smoothlength_variation(old_hj, current_hj) < SMOOTHLENGTH_VARIATION_TOLERANCE:
             return current_hj
         else:
             old_hj = current_hj
