@@ -27,7 +27,7 @@ def directionij(rj, ri):
 
 def M4(dist, h):
     q = dist/h
-    w = (1/np.pi*h**3)*np.piecewise(q, 
+    w = 1/(np.pi*h**3)*np.piecewise(q, 
                                     [q >= 2, q >= 1 and q < 2, q < 1], 
                                     [0, 0.25*(2 - q)**3, 1 - 3/2*q**2 + 3/4*q**3])
     
@@ -35,7 +35,7 @@ def M4(dist, h):
 
 def M4_d1(dist, h):
     q = dist/h
-    wp = (1/math.pi*h**4)*np.piecewise(q, 
+    wp = 1/(math.pi*h**4)*np.piecewise(q, 
                                        [q >= 2, q >= 1 and q < 2, q < 1], 
                                        [0, -0.75*(2 - q)**2, 9/4 * q**2 - 3*q])
     
@@ -81,30 +81,39 @@ def omegaj(j, hj, positions, denj):
     return 1 + hj/(3 * denj) * sum
 
 # Cossins 3.112 - 3.115
-def zetaj(j, hj, positions):
-    zeta = var_density(hj) - density(positions[j], positions, hj)
+def zetaj(hj, densityj):
+    zeta = var_density(hj) - densityj
     return zeta
 
-# Don't really need zetaprime
+## Don't really need zetaprime
+#def zetaprime(densityj, omegaj, hj):
+#    return -3 * densityj * omegaj / hj
 def zetaprime(densityj, omegaj, hj):
-    return -3 * densityj * omegaj / hj
+    mj = PARTICLE_MASS
+    return -3 * densityj / hj * (omegaj - 1) - 3 * mj * (COUPLING_CONST / hj)**3 / hj
 
-def new_h(old_h, zeta, density, omega):
-    new_h = old_h * (1 + zeta/(3 * density * omega))
+#def new_h(old_h, zeta, density, omega):
+#    new_h = old_h * (1 + zeta/(3 * density * omega))
+#    return new_h
+def new_h(old_h, zeta, zetap):
+    new_h = old_h - zeta / zetap
     return new_h
 
 def smoothlength_variation(new_h, old_h):
-    return np.abs(new_h - old_h)/old_h
+    return np.abs(new_h - old_h)/np.abs(old_h)
 
 def newton_h_iteration(j, positions, old_hj):
+    print("Current hj: " + str(old_hj))
     old_denj = density(positions[j], positions, old_hj)
     print("Density:    " + str(old_denj))
     omega = omegaj(j, old_hj, positions, old_denj)
     print("Omega:      " + str(omega))
-    zeta = zetaj(j, old_hj, positions)
+    zeta = zetaj(old_hj, old_denj)
     print("Zeta:      " + str(zeta))
-    new_hj = new_h(old_hj, zeta, old_denj, omega)
-    print("Current hj: " + str(new_hj))
+    zetap = zetaprime(old_denj, omega, old_hj)
+    print("Zeta prime:      " + str(zetap))
+    #new_hj = new_h(old_hj, zeta, old_denj, omega)
+    new_hj = new_h(old_hj, zeta, zetap)
 
     return new_hj
 
