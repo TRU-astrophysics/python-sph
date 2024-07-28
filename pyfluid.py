@@ -4,11 +4,16 @@ import math
 # NOTE: Need to create an array of masses if we want differing particle masses
 # ALL FUNCTIONS currently assume uniform masses
 PARTICLE_MASS = 1
-INITIAL_H = 2
+DEFAULT_H = 2
+INITIAL_H_A = 1e5
+INITIAL_H_B = 1e-5
+INITIAL_H_NEWTON = 2
 # Coupling constant is eta in Cossins's thesis (see 3.98)
 COUPLING_CONST = 1.3
 SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-3
 NEWTON_ITERATION_LIMIT = 10
+BISECTION_ITERATION_LIMIT = 50
+BISECTION_TOLERANCE = 1e-4
 # G in units of years, earth masses, AU 
 G = 4 * np.pi
 
@@ -86,34 +91,64 @@ def zetaj(hj, densityj):
     return zeta
 
 ## Don't really need zetaprime
-#def zetaprime(densityj, omegaj, hj):
-#    return -3 * densityj * omegaj / hj
+# NOTE: the old zetaprime is commented out because it appears to be mathematically invalid. Further research?
 def zetaprime(densityj, omegaj, hj):
-    mj = PARTICLE_MASS
-    return -3 * densityj / hj * (omegaj - 1) - 3 * mj * (COUPLING_CONST / hj)**3 / hj
+    return -3 * densityj * omegaj / hj
+#def zetaprime(densityj, omegaj, hj):
+#    mj = PARTICLE_MASS
+#    return -3 * densityj / hj * (omegaj - 1) - 3 * mj * (COUPLING_CONST / hj)**3 / hj
 
 #def new_h(old_h, zeta, density, omega):
 #    new_h = old_h * (1 + zeta/(3 * density * omega))
 #    return new_h
-def new_h(old_h, zeta, zetap):
+def newton_new_h(old_h, zeta, zetap):
     new_h = old_h - zeta / zetap
     return new_h
 
 def smoothlength_variation(new_h, old_h):
     return np.abs(new_h - old_h)/np.abs(old_h)
 
+# This should perhaps be broken down into a series of smaller functions, like newton's method is. 
+def bisection_h(j, positions):
+    h_a = INITIAL_H_A
+    h_b = INITIAL_H_B
+    i = 0
+
+    while i < BISECTION_ITERATION_LIMIT:
+        denj_a = density(positions[j], positions, h_a)
+        zeta_a = zetaj(h_a, denj_a)
+        denj_b = density(positions[j], positions, h_b)
+        zeta_b = zetaj(h_b, denj_b)
+
+        # zeta(h_a) * zeta(h_b) must be < 0 because one must be pos and one neg, so there is a root of zeta between
+        if zeta_a * zeta_b > 0:
+            print("ERROR: Root out of bisection bounds.")
+            return
+        
+        root_candidate = (h_a + h_b)/2
+        zeta_root = zetaj(root_candidate, density(positions, root_candidate))
+        
+        if np.abs(zeta_root) < BISECTION_TOLERANCE:
+            return root_candidate
+        
+        else: 
+            if zeta_a * zeta_root < 0:
+                h_b = root_candidate
+        
+            elif zeta_b * zeta_root < 0:
+                h_a = root_candidate
+        
+            i += 1
+        
+        print("ERROR: Failure to converge in Bisection_new_h.")
+        
 def newton_h_iteration(j, positions, old_hj):
-    print("Current hj: " + str(old_hj))
+
     old_denj = density(positions[j], positions, old_hj)
-    print("Density:    " + str(old_denj))
     omega = omegaj(j, old_hj, positions, old_denj)
-    print("Omega:      " + str(omega))
     zeta = zetaj(old_hj, old_denj)
-    print("Zeta:      " + str(zeta))
     zetap = zetaprime(old_denj, omega, old_hj)
-    print("Zeta prime:      " + str(zetap))
-    #new_hj = new_h(old_hj, zeta, old_denj, omega)
-    new_hj = new_h(old_hj, zeta, zetap)
+    new_hj = newton_new_h(old_hj, zeta, zetap)
 
     return new_hj
 
@@ -131,7 +166,10 @@ def newton_h_while(j, positions, initial_hj):
             old_hj = current_hj
             i += 1
     
-    print("Error: Failure to Converge in newton_h_while")
+    print("Error: Failure to Converge in newton_h_while. Attempting Bisection")
+
+    return bisection_h(j, positions)
+
 
 def newton_h_recursive(j, positions, old_hj, old_old_hj=0):
     new_hj = newton_h_iteration(j, positions, old_hj)
@@ -316,7 +354,7 @@ def var_h_sim(time, positions_with_time, velocities_with_time, energies_with_tim
                                                                                                                      dt)
 
 def static_h_leapfrog(pos0, vel0, energy0, dt):
-    static_h_arr = INITIAL_H*np.ones(pos0.shape[0])
+    static_h_arr = DEFAULT_H*np.ones(pos0.shape[0])
 
     den0 =      density_arr(pos0, static_h_arr)
     press0 =    pressure_arr(energy0, den0)

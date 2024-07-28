@@ -2,11 +2,17 @@ import pyfluid as sph
 import numpy as np
 import matplotlib.pyplot as plt
 
-pos = np.zeros((2, 3))
-pos[1][0] = 1
-h_initial = 2
+rng = np.random.default_rng()
+
+pos = np.ones((100, 3))
+
+for i in range(pos.shape[0]):
+    pos[i] = np.array([rng.random(), rng.random(), rng.random()])
+
+h_initial = 0.2
 
 print("final hj: " + str(sph.newton_h_while(0, pos, h_initial)))
+
 
 '''
 d = np.arange(0, 5, 0.01)
