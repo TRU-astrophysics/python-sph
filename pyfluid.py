@@ -5,8 +5,8 @@ import math
 # ALL FUNCTIONS currently assume uniform masses
 PARTICLE_MASS = 1
 DEFAULT_H = 2
-INITIAL_H_A = 1e5
-INITIAL_H_B = 1e-5
+INITIAL_H_A = 100
+INITIAL_H_B = 1e-3
 INITIAL_H_NEWTON = 2
 # Coupling constant is eta in Cossins's thesis (see 3.98)
 COUPLING_CONST = 1.3
@@ -126,7 +126,7 @@ def bisection_h(j, positions):
             return
         
         root_candidate = (h_a + h_b)/2
-        zeta_root = zetaj(root_candidate, density(positions, root_candidate))
+        zeta_root = zetaj(root_candidate, density(positions[j], positions, root_candidate))
         
         if np.abs(zeta_root) < BISECTION_TOLERANCE:
             return root_candidate
@@ -140,7 +140,7 @@ def bisection_h(j, positions):
         
             i += 1
         
-        print("ERROR: Failure to converge in Bisection_new_h.")
+    print("ERROR: Failure to converge in Bisection_new_h.")
         
 def newton_h_iteration(j, positions, old_hj):
 
@@ -160,13 +160,13 @@ def newton_h_while(j, positions, initial_hj):
     while i < NEWTON_ITERATION_LIMIT:
         current_hj = newton_h_iteration(j, positions, old_hj)
 
-        if smoothlength_variation(old_hj, current_hj) < SMOOTHLENGTH_VARIATION_TOLERANCE:
+        if smoothlength_variation(old_hj, current_hj) < SMOOTHLENGTH_VARIATION_TOLERANCE and current_hj > 0:
             return current_hj
         else:
             old_hj = current_hj
             i += 1
     
-    print("Error: Failure to Converge in newton_h_while. Attempting Bisection")
+    print("Error: Failure to Converge in newton_h_while. Attempting Bisection.")
 
     return bisection_h(j, positions)
 
