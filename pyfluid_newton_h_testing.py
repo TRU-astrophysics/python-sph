@@ -9,11 +9,11 @@ pos[0, :] = 1
 
 h_initial = 0.2
 print("final hj from close guess: ")
-print(sph.newton_h_while(0, pos, h_initial))
+print(sph.newton_smoothlength_while(0, pos, h_initial))
 
 h_initial = 2
 print("final hj from bad guess: ")
-print(sph.newton_h_while(0, pos, h_initial))
+print(sph.newton_smoothlength_while(0, pos, h_initial))
 
 
 '''
