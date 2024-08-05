@@ -11,17 +11,21 @@ COUPLING_CONST = 1.3
 # Constants for determining smoothing lengths:
 # Newton's method
 SMOOTHLENGTH_VARIATION_TOLERANCE = 1e-3
-NEWTON_ITERATION_LIMIT = 10
+NEWTON_ITERATION_LIMIT = 20
 INITIAL_NEWTON_SMOOTHELENGTH = 0.2
 
 # Bisection
-BISECTION_ITERATION_LIMIT = 50
-BISECTION_TOLERANCE = 1e-4
-INITIAL_BISECTION_SMOOTHLENGTH_A = 100
+BISECTION_ITERATION_LIMIT = 100
+BISECTION_TOLERANCE = 1e-10
+INITIAL_BISECTION_SMOOTHLENGTH_A = 1e3
 INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
 
-# G in units of years, earth masses, AU 
-G = 4 * np.pi
+# G in units of years, solar masses, AU
+# 39.4324 would be slightly more accurate
+G = 4 * np.pi**2
+
+# Boltzmann's constant in units of years, solar masses, AU, Kelvin
+K_BOLTZMANN = 3.08e-61
 
 def distance(rj, ri):
     diff = rj - ri
@@ -71,7 +75,7 @@ def M4_smoothlength_derivative(dist, smoothlength):
 
 
 # Cossins 3.106
-def omega_j(j, smoothlength_j, position_arr, density_j):
+def omega_j(j, position_arr, density_j, smoothlength_j):
     sum = 0
     for i in range(position_arr.shape[0]):
         dist = distance(position_arr[j], position_arr[i])
@@ -79,20 +83,28 @@ def omega_j(j, smoothlength_j, position_arr, density_j):
     
     return 1 + smoothlength_j/(3 * density_j) * sum
 
+def omega_arr(position_arr, density_arr, smoothlength_arr):
+    omega_arr = np.zeros(position_arr.shape[0])
+
+    for j in range(position_arr.shape[0]):
+        omega_arr[j] = omega_j(j, position_arr, density_arr[j], smoothlength_arr[j])
+    
+    return omega_arr
+
 # Cossins 3.112 - 3.115
-def zeta_j(smoothlength_j, densityj):
-    zeta = var_density(smoothlength_j) - densityj
+def zeta_j(smoothlength_j, density_j):
+    zeta = var_density(smoothlength_j) - density_j
     return zeta
 
-# NOTE: We may be able to find zetaprime with -3 * densityj * omega_j / smoothlength_j
-def zetaprime(densityj, omega_j, smoothlength_j):
+# NOTE: We may be able to find zetaprime with -3 * density_j * omega_j / smoothlength_j
+def zetaprime(density_j, omega_j, smoothlength_j):
     mj = PARTICLE_MASS
-    return -3 * densityj / smoothlength_j * (omega_j - 1) - 3 * mj * (COUPLING_CONST / smoothlength_j)**3 / smoothlength_j
+    return -3 * density_j / smoothlength_j * (omega_j - 1) - 3 * mj * (COUPLING_CONST / smoothlength_j)**3 / smoothlength_j
 
 def smoothlength_variation(new_h, old_h):
     return np.abs(new_h - old_h)/np.abs(old_h)
 
-# This should perhaps be broken down into a series of smaller functions, like newton's method is. 
+# Bisection should perhaps be broken down into a series of smaller functions, like newton's method is. 
 def bisection_h(j, position_arr):
     h_a = INITIAL_BISECTION_SMOOTHLENGTH_A
     h_b = INITIAL_BISECTION_SMOOTHLENGTH_B
@@ -107,7 +119,6 @@ def bisection_h(j, position_arr):
         # zeta(h_a) * zeta(h_b) must be < 0 because one must be pos and one neg, so there is a root of zeta between
         if zeta_a * zeta_b > 0:
             print("ERROR: Root out of bisection bounds.")
-            return
         
         root_candidate = (h_a + h_b)/2
         zeta_root = zeta_j(root_candidate, density(j, position_arr, root_candidate))
@@ -129,7 +140,7 @@ def bisection_h(j, position_arr):
 def newton_smoothlength_iteration(j, position_arr, old_smoothlength_j):
 
     old_density_j = density(j, position_arr, old_smoothlength_j)
-    omega = omega_j(j, old_smoothlength_j, position_arr, old_density_j)
+    omega = omega_j(j, position_arr, old_density_j, old_smoothlength_j)
     zeta = zeta_j(old_smoothlength_j, old_density_j)
     zetap = zetaprime(old_density_j, omega, old_smoothlength_j)
     new_smoothlength_j = newton_new_h(old_smoothlength_j, zeta, zetap)
@@ -149,8 +160,7 @@ def newton_smoothlength_while(j, position_arr, initial_smoothlength_j):
             old_smoothlength_j = current_smoothlength_j
             i += 1
     
-    print("Error: Failure to Converge in newton_smoothlength_while. Attempting Bisection.")
-
+    print("ERROR: Failure to converge in newton_new_h.")
     return bisection_h(j, position_arr)
 
 def newton_smoothlength_recursive(j, position_arr, old_smoothlength_j, old_old_smoothlength_j=0):
@@ -232,7 +242,7 @@ def energy_evolve(j, position_arr, velocity_arr, energy_arr, pressure_arr, densi
     density_change = 0
     
     for i in range(velocity_arr.shape[0]):
-        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i], dellM4(position_arr[i], position_arr[j], smoothlength_j))
+        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i], dellM4(position_arr[j], position_arr[i], smoothlength_j))
     
     energy_change = pressure_arr[j] / density_arr[j]**2 * density_change
     
@@ -268,7 +278,6 @@ def grav_force(dist, smoothlength):
                          1/(smoothlength**2) * (8/3*x - 3*x**2 + 6/5*x**3 - 1/6*x**4 - 1/(15*x**2)),
                          1/(dist**2)]) 
 
-# Note: This might be wrong. I just quickly did the calculus in my head, so it ought to be looked over more thoroughly. 
 def grav_potential_smoothlength_derivative(dist, smoothlength):
     x = dist/smoothlength
     return np.piecewise(x, 
@@ -279,19 +288,39 @@ def grav_potential_smoothlength_derivative(dist, smoothlength):
                          -1/(smoothlength**2) * (4*x**2 - 4*x**3 + 3/2*x**4 - 1/5*x**5 - 8/5),
                          0])
 
-def xi(j, density_j, smoothlength_j, position_arr):
+def xi(j, position_arr, density_j, smoothlength_j):
+    
     sum  = 0
+
     for i in range(position_arr.shape[0]):
         dist = distance(position_arr[j], position_arr[i])
         sum += PARTICLE_MASS * grav_potential_smoothlength_derivative(dist, smoothlength_j)
+
     return - smoothlength_j/(3*density_j) * sum
 
-def smoothed_gravity_acceleration_comp(j, i, position_arr, smoothlength_j):
+def xi_arr(density_arr, smoothlength_arr, position_arr):
+    xi_arr = np.zeros(position_arr.shape[0])
+
+    for j in range(position_arr.shape[0]):
+        xi_arr[j] = xi(j, position_arr, density_arr[j], smoothlength_arr[j])
+    
+    return xi_arr
+
+def smoothed_gravity_acceleration_comp(j, i, position_arr, smoothlength_arr):
     
     if np.array_equal(position_arr[j], position_arr[i]):
         return 0
 
-    return -G * PARTICLE_MASS * grav_force(distance(position_arr[j], position_arr[i]), smoothlength_j) * direction_i_j(position_arr[j], position_arr[i])
+    dist = distance(position_arr[j], position_arr[i])
+    
+    return -G/2 * PARTICLE_MASS * ((grav_force(dist, smoothlength_arr[j]) 
+                                  + grav_force(dist, smoothlength_arr[i]))
+                                  * direction_i_j(position_arr[j], position_arr[i]))
+
+def smoothed_gravity_correction_comp(j, i, position_arr, smoothlength_arr, omega_arr, xi_arr):
+
+    return -G/2 * PARTICLE_MASS * (xi_arr[j]/omega_arr[j] * dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
+                                  + xi_arr[i]/omega_arr[i] * dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
 
 def basic_gravity_acceleration_comp(j, i, position_arr):
     
@@ -302,57 +331,65 @@ def basic_gravity_acceleration_comp(j, i, position_arr):
 
 
 # Acceleration
-def fluid_acceleration_comp(j, i, position_arr, density_arr, pressure_arr, smoothlength_j):
+def fluid_acceleration_comp(j, i, position_arr, density_arr, pressure_arr, smoothlength_arr, omega_arr):
     
     if np.array_equal(position_arr[j], position_arr[i]):
         return 0
 
-    return -PARTICLE_MASS*(pressure_arr[j]/density_arr[j]**2 + pressure_arr[i]/density_arr[i]**2) * dellM4(position_arr[j], position_arr[i], smoothlength_j)
+    return -PARTICLE_MASS * (pressure_arr[j]/(omega_arr[j] * density_arr[j]**2) * dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
+                           + pressure_arr[i]/(omega_arr[i] * density_arr[i]**2) * dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
 
-def acceleration(j, position_arr, density_arr, pressure_arr, smoothlength_arr):
+def acceleration(j, position_arr, density_arr, pressure_arr, smoothlength_arr, omega_arr, xi_arr):
     acc = np.array([0., 0., 0.])
 
     for i in range(position_arr.shape[0]):
-        acc += (fluid_acceleration_comp(j, i, position_arr, density_arr, pressure_arr, smoothlength_arr[j]) + smoothed_gravity_acceleration_comp(j, i, position_arr, smoothlength_arr[j]))
+        acc += (fluid_acceleration_comp(j, i, position_arr, density_arr, pressure_arr, smoothlength_arr, omega_arr) 
+              + smoothed_gravity_acceleration_comp(j, i, position_arr, smoothlength_arr)
+              + smoothed_gravity_correction_comp(j, i, position_arr, smoothlength_arr, omega_arr, xi_arr))
 
     return acc
 
-def acceleration_arr(position_arr, density_arr, pressure_arr, smoothlength_arr):
+def acceleration_arr(position_arr, density_arr, pressure_arr, smoothlength_arr, omega_arr, xi_arr):
     acc_arr = np.zeros((position_arr.shape[0], 3))
     
     for i in range(position_arr.shape[0]):
-        acc_arr[i] = acceleration(i, position_arr, density_arr, pressure_arr, smoothlength_arr)
+        acc_arr[i] = acceleration(i, position_arr, density_arr, pressure_arr, smoothlength_arr, omega_arr, xi_arr)
 
     return acc_arr
 
 
+# Integration and Simulation
 # Cossins 3.151
 def var_smoothlength_leapfrog(pos0, vel0, energy0, smoothlength_approx, dt):
     h0 =        newton_smoothlength_arr(pos0, smoothlength_approx)
     den0 =      var_density_arr(h0)
+    omega0 =    omega_arr(pos0, den0, h0)
+    xi0 =       xi_arr(den0, h0, pos0)
     press0 =    pressure_arr(energy0, den0)
-    acc0 =      acceleration_arr(pos0, den0, press0, h0)
+    acc0 =      acceleration_arr(pos0, den0, press0, h0, omega0, xi0)
     pos1 = pos0 + vel0*dt + 0.5*acc0*dt**2
 
     h1 =        newton_smoothlength_arr(pos1, h0) 
     # energy1 is (almost certainly) supposed to take h0, not h1! Don't change!
     energy1 =   energy_evolve_arr(pos0, vel0, energy0, press0, den0, h0, dt)
     den1 =      density_arr(pos1, h1)
+    omega1 =    omega_arr(pos1, den1, h1)
+    xi1 =       xi_arr(den1, h1, pos1)
     press1 =    pressure_arr(energy1, den1)
-    acc1 =      acceleration_arr(pos1, den1, press1, h1)
+    acc1 =      acceleration_arr(pos1, den1, press1, h1, omega1, xi1)
     vel1 = vel0 + 0.5*(acc0 + acc1)*dt
 
-    return pos1, vel1, energy1
+    return pos1, vel1, energy1, h1
 
-def var_smoothlength_sim(time, positions_with_time, velocities_with_time, energies_with_time, initial_smoothlength_with_time):
+def var_smoothlength_sim(time, positions_with_time, velocities_with_time, energies_with_time, smoothlengths_with_time):
     dt = time[1] - time[0]
 
     for t in range(len(time)-1):
-        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1] = var_smoothlength_leapfrog(positions_with_time[:, :, t], 
-                                                                                                                     velocities_with_time[:, :, t], 
-                                                                                                                     energies_with_time[:, t], 
-                                                                                                                     initial_smoothlength_with_time[:, t],
-                                                                                                                     dt)
+        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1], smoothlengths_with_time[:, t+1] = var_smoothlength_leapfrog(positions_with_time[:, :, t], 
+                                                                                                                                                                 velocities_with_time[:, :, t], 
+                                                                                                                                                                 energies_with_time[:, t], 
+                                                                                                                                                                 smoothlengths_with_time[:, t],
+                                                                                                                                                                 dt)
 
 def static_smoothlength_leapfrog(pos0, vel0, energy0, dt):
     static_smoothlength_arr = DEFAULT_SMOOTHLENGTH*np.ones(pos0.shape[0])

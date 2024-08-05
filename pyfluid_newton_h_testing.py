@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 
 rng = np.random.default_rng()
 
-pos = np.random.rand(5000, 3).astype(np.double)*2
+pos = np.random.rand(30, 3).astype(np.double)*2
 pos[0, :] = 1
 
-h_initial = 0.2
+h_initial = 0.8
 print("final hj from close guess: ")
 print(sph.newton_smoothlength_while(0, pos, h_initial))
 
