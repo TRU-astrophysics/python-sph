@@ -150,6 +150,7 @@ def bisection_h(j, position_arr):
     print("ERROR: Failure to converge in Bisection_new_h.")
         
 def newton_smoothlength_iteration(j, position_arr, old_smoothlength_j):
+
     old_density_j = density(j, position_arr, old_smoothlength_j)
     omega = omega_j(j, position_arr, old_density_j, old_smoothlength_j)
     zeta = zeta_j(old_smoothlength_j, old_density_j)
@@ -171,7 +172,7 @@ def newton_smoothlength_while(j, position_arr, initial_smoothlength_j):
             old_smoothlength_j = current_smoothlength_j
             i += 1
     
-    print("ERROR: Failure to converge in newton_new_h.")
+    print("WARNING: Failure to converge in newton_new_h.")
     return bisection_h(j, position_arr)
 
 def newton_smoothlength_recursive(j, position_arr, old_smoothlength_j, old_old_smoothlength_j=0):
@@ -202,6 +203,8 @@ def newton_smoothlength_arr(position_arr, old_smoothlength_arr):
         smoothlength_arr[i] = newton_smoothlength_while(
                                 i, position_arr, old_smoothlength_arr[i])
     
+    if np.any(smoothlength_arr < 0):
+        raise RuntimeError("Obtained negative smoothing length.")
     return smoothlength_arr
 
 
@@ -240,7 +243,7 @@ def var_density_arr(smoothlength_arr):
 
 
 def pressure(energy, density):
-    return (ADIABATIC_INDEX - 1/3) * energy * density
+    return (ADIABATIC_INDEX - 1) * energy * density
 
 def pressure_arr(energy_arr, density_arr):
     pressure_arr = np.zeros(energy_arr.shape[0])
@@ -248,6 +251,8 @@ def pressure_arr(energy_arr, density_arr):
     for i in range(energy_arr.shape[0]):
         pressure_arr[i] = pressure(energy_arr[i], density_arr[i])
 
+    if np.any(pressure_arr < 0):
+        raise RuntimeError("Obtained negative pressure.")
     return pressure_arr
 
 def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr):
@@ -259,7 +264,6 @@ def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength
     """
     v_dot_r = np.dot(position_arr[j] - position_arr[i], velocity_arr[j] - velocity_arr[i])
     if v_dot_r < 0:  # Bulk viscosity only for convergent flow.
-        # TODO: Missing sound speed.
         # Compute mu
         mean_h = 0.5 * (smoothlength_arr[j] + smoothlength_arr[i])
         dist_ij = distance(position_arr[j], position_arr[i])
@@ -269,8 +273,11 @@ def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength
         csi = (ADIABATIC_INDEX * pressure_arr[i] / density_arr[i])**0.5
         cs = 0.5 * (csi + csj)
         # Compute mean density
-        mean_density = density_arr[j] + density_arr[i]
-        return (- ALPHA_SPH * cs * mu + BETA_SPH * mu**2) / (0.5 * mean_density)
+        mean_density = 0.5 * (density_arr[j] + density_arr[i])
+        Pi_value = (- ALPHA_SPH * cs * mu + BETA_SPH * mu**2) / mean_density
+        if Pi_value < 0:
+            raise RuntimeError("Obtained negative value for Pi")
+        return Pi_value
     else:
         return 0
 
@@ -317,15 +324,31 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
                         velocity_arr[j] - velocity_arr[i],
                         dellM4(position_arr[j], position_arr[i], 
                                                 smoothlength_arr[j]))
+
+
         
         mean_dellM4 = 0.5 * (dellM4(position_arr[j], position_arr[i], 
                                     smoothlength_arr[j])
                            + dellM4(position_arr[j], position_arr[i], 
-                                    smoothlength_arr[i])) 
+                                    smoothlength_arr[i]))
+        # MF: I am unsure if we should have vj, vji or 0.5*vji here.
+        # The thesis says vji, but I can't understand this result.
+        # Using vji ensures energy only increase due to viscosity.
+        # It also makes the overall magnitude of the energy rate due 
+        # to viscosity smaller, and more in line with the "density_change"
+        # term. I think we need a factor of 0.5 here though.
+        # TODO: investigate.
+        vji = velocity_arr[j] - velocity_arr[i]
         viscosity_sum += (PARTICLE_MASS * Pi(j, i, position_arr, 
                                              velocity_arr, pressure_arr, 
                                              density_arr, smoothlength_arr) 
-                          * np.dot(velocity_arr[j], mean_dellM4))
+                          * np.dot(vji, mean_dellM4))
+                          #* np.dot(velocity_arr[j], mean_dellM4))
+
+    # MF: This test could actually be inside the for loop above.
+    # But that would be more expensive.
+    if np.any(viscosity_sum < 0):
+        raise RuntimeError("Obtained negative energy rate due to viscosity.")
 
     return (pressure_arr[j] / (density_arr[j]**2 * omega_arr[j]) 
             * density_change + viscosity_sum)
@@ -482,15 +505,15 @@ def var_smoothlength_leapfrog(pos0, vel0, energy0, h0, dt):
     xi0 =       xi_arr(den0, h0, pos0)
     press0 =    pressure_arr(energy0, den0)
     energy_rate0 = energy_rate_arr(pos0, vel0, press0, den0, h0, omega0)
-    #acc0 =      acceleration_arr(pos0, den0, press0, h0, omega0, xi0)
     acc0 =      acceleration_arr(pos0, den0, vel0, press0, h0, omega0, xi0)
-    #pos1 = pos0 + vel0*dt + 0.5*acc0*dt**2
 
     # MF: Need to check memory usage and whether we need to overwrite
     # the "0" arrays when writting the "mid" arrays, to save memory.
     pos_mid = pos0 + vel0 * 0.5 * dt
     vel_mid = vel0 + acc0 * 0.5 * dt
     energy_mid = energy0 + energy_rate0 * 0.5 * dt
+    if np.any(energy_mid < 0):
+        raise RuntimeError("Obtained negative energy.")
     h_mid = newton_smoothlength_arr(pos_mid, h0)
     den_mid = var_density_arr(h_mid)
     omega_mid = omega_arr(pos_mid, den_mid, h_mid)
@@ -502,6 +525,8 @@ def var_smoothlength_leapfrog(pos0, vel0, energy0, h0, dt):
     vel1 = vel0 + acc_mid * dt
     pos1 = pos0 + 0.5 * (vel0 + vel1) * dt
     energy1 = energy0 + energy_rate_mid * dt
+    if np.any(energy1 < 0):
+        raise RuntimeError("Obtained negative energy.")
     # Might as well use h_mid as a guess. 
     h1 = newton_smoothlength_arr(pos1, h_mid)
 
@@ -516,6 +541,7 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
     time_arr : ndarray(nt)
         The times at which to compute the evolved system. nt is the number of time steps.
         Currently assumed to be uniformly spaced.
+        TODO: we currently don't use this except to get dt and nt. we should have these as our inputs then.
     positions0 : ndarray(N, 3)
         Initial positions. N is the number of particles. All arrays are expected to be in 3D.
     velocities0 : ndarray(N, 3)
@@ -562,6 +588,7 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
     # We could also just keep positions. No one is going to plot velocities?
     # Energies might be interesting though?
     for t in range(Nt-1):
+        print("time step:", t, "of", Nt)
         (positions_with_time[t+1, :, :],
          velocities_with_time[t+1, :, :],
          energies_with_time[t+1, :],
