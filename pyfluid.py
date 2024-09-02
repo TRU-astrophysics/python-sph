@@ -148,6 +148,7 @@ def bisection_h(j, position_arr):
             i += 1
         
     print("ERROR: Failure to converge in Bisection_new_h.")
+
         
 def newton_smoothlength_iteration(j, position_arr, old_smoothlength_j):
 
