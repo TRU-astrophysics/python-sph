@@ -5,24 +5,22 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import pyfluid as sph
 
 # Plot of M4 and its first two derivatives
-'''
+
 d = np.arange(0, 5, 0.01)
 m4 = np.zeros(len(d))
 m4d1 = np.zeros(len(d))
-m4d2 = np.zeros(len(d))
 
-for i in range(0, len(d)-1):
-    m4[i] = sph.M4(d[i])
-    m4d1[i] = sph.M4_d1(d[i])
-    m4d2[i] = sph.M4_d2(d[i])
+for i in range(0, len(d)):
+    m4[i] = sph.M4(d[i], 1)
+    m4d1[i] = sph.M4_d1(d[i], 1)
     i += 1
 
-plt.plot(d, m4, 'r', d, m4d1, 'b', d, m4d2, 'g')
+plt.plot(d, m4, 'r', d, m4d1, 'b')
 plt.show()
-'''
 
+''
 # NOTE: positions defined with [particle][dimension][time]
-
+'''
 # Initial definitions
 n = 20
 t = np.arange(0., 20, 0.1)
@@ -32,7 +30,7 @@ ys = pos[:, 1, :]
 zs = pos[:, 2, :]
 vels = np.zeros((n, 3, len(t)))
 engs = np.ones((n, len(t)))*7
-
+'''
 # Grid of particles
 '''
 for i in range(n/2):
@@ -41,7 +39,7 @@ for i in range(n/2, n):
     pos[i, 0, 0] = i - n/2
     pos[i, 1, 0] = 1
 '''
-
+'''
 # Random distribution
 rng = np.random.default_rng()
 for i in range(n):
@@ -73,8 +71,8 @@ def update(t):
 ani = animation.FuncAnimation(fig=fig, func=update, frames=len(t), interval=100)
 #ani.save(filename="2D_SPH.gif", writer="pillow")
 plt.show()
-
-
+'''
+''
 
 # 3D animation
 '''

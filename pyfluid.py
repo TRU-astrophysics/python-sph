@@ -32,7 +32,10 @@ INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
 G = 39.4227
 
 # Boltzmann's constant in units of years, solar masses, AU, Kelvin
-K_BOLTZMANN = 3.0856e-61
+K_BOLTZMANN = 3.0844e-61
+
+# Hydrogen mass in units of solar masses
+HYDROGEN_MASS = 8.4147e-58
 
 # Adiabatic index (gamma):
 ADIABATIC_INDEX = 5/3
@@ -90,7 +93,7 @@ def omega_j(j, position_arr, density_j, smoothlength_j):
     for i in range(position_arr.shape[0]):
         dist = distance(position_arr[j], position_arr[i])
         sum += PARTICLE_MASS * M4_smoothlength_derivative(dist, smoothlength_j)
-    
+
     return 1 + smoothlength_j/(3 * density_j) * sum
 
 def omega_arr(position_arr, density_arr, smoothlength_arr):
@@ -117,8 +120,8 @@ def smoothlength_variation(new_h, old_h):
     return np.abs(new_h - old_h)/np.abs(old_h)
 
 # Bisection should perhaps be broken down into a series of smaller functions, like newton's method is. 
-def bisection_h(j, position_arr):
-    h_a = INITIAL_BISECTION_SMOOTHLENGTH_A
+def bisection_h(j, position_arr, prev_smoothlength):
+    h_a = prev_smoothlength * 1e2
     h_b = INITIAL_BISECTION_SMOOTHLENGTH_B
     i = 0
 
@@ -174,7 +177,7 @@ def newton_smoothlength_while(j, position_arr, initial_smoothlength_j):
             i += 1
     
     print("WARNING: Failure to converge in newton_new_h.")
-    return bisection_h(j, position_arr)
+    return bisection_h(j, position_arr, old_smoothlength_j)
 
 def newton_smoothlength_recursive(j, position_arr, old_smoothlength_j, old_old_smoothlength_j=0):
     new_smoothlength_j = newton_smoothlength_iteration(j, position_arr, old_smoothlength_j)
@@ -267,12 +270,14 @@ def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength
     if v_dot_r < 0:  # Bulk viscosity only for convergent flow.
         # Compute mu
         mean_h = 0.5 * (smoothlength_arr[j] + smoothlength_arr[i])
+
         dist_ij = distance(position_arr[j], position_arr[i])
         mu = mean_h * v_dot_r / (dist_ij**2 + EPSILON * mean_h**2)
         # Compute average sound speed
         csj = (ADIABATIC_INDEX * pressure_arr[j] / density_arr[j])**0.5
         csi = (ADIABATIC_INDEX * pressure_arr[i] / density_arr[i])**0.5
         cs = 0.5 * (csi + csj)
+
         # Compute mean density
         mean_density = 0.5 * (density_arr[j] + density_arr[i])
         Pi_value = (- ALPHA_SPH * cs * mu + BETA_SPH * mu**2) / mean_density
@@ -282,34 +287,6 @@ def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength
     else:
         return 0
 
-# MF: This function and "energy_evolve_arr" are deprecated.
-# The new functions (including viscosity) work by returning the energy rate
-# and letting the leapfrog function do the evolution.
-# TODO: Either delete (we can always remove viscosity by setting constants to zero)
-# or turn into an energy-rate.
-def energy_evolve(j, position_arr, velocity_arr, energy_arr, pressure_arr, density_arr, smoothlength_j, dt):
-    """
-    This is energy evolution without variable smoothing length and without viscosity. Cossins eq. (3.74).
-    PR: energy is currently just evolved w/ Euler integration - maybe not ideal?
-    MF: I think we don't have to evolve energy here. Just compute dy/dt and leave the evolution for the leapfrog integrator.
-    This is what I did for the version with viscosity.
-    """
-    density_change = 0
-    
-    for i in range(velocity_arr.shape[0]):
-        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i], dellM4(position_arr[j], position_arr[i], smoothlength_j))
-    
-    energy_change = pressure_arr[j] / density_arr[j]**2 * density_change
-    
-    return energy_arr[j] + energy_change * dt
-
-def energy_evolve_arr(position_arr, velocity_arr, energies_initial, pressure_arr, density_arr, smoothlength_arr, omega_arr, dt):
-    energies_final = np.zeros(position_arr.shape[0])
-
-    for i in range(position_arr.shape[0]):
-        energies_final[i] = energy_evolve(i, position_arr, velocity_arr, energies_initial, pressure_arr, density_arr, smoothlength_arr[i], dt)
-
-    return energies_final
 
 def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr, omega_arr):
     """
@@ -326,8 +303,6 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
                         dellM4(position_arr[j], position_arr[i], 
                                                 smoothlength_arr[j]))
 
-
-        
         mean_dellM4 = 0.5 * (dellM4(position_arr[j], position_arr[i], 
                                     smoothlength_arr[j])
                            + dellM4(position_arr[j], position_arr[i], 
@@ -438,28 +413,10 @@ def smoothed_gravity_correction_comp(j, i, position_arr, smoothlength_arr, omega
     return -G/2 * PARTICLE_MASS * (xi_arr[j]/omega_arr[j] * dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
                                   + xi_arr[i]/omega_arr[i] * dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
 
-def basic_gravity_acceleration_comp(j, i, position_arr):
-    
-    if np.array_equal(position_arr[j], position_arr[i]):
-        return 0
-    
-    return -direction_i_j(position_arr[j], position_arr[i]) * G/distance(position_arr[j], position_arr[i])**2
-
-
-# MF: This function is deprecated. The new version (with viscosity) needs the velocities as inout.
-# TODO: Should probably delete it (we can always remove viscosity by setting constants to zero).
-def fluid_acceleration_comp(j, i, position_arr, density_arr, pressure_arr, smoothlength_arr, omega_arr):
-    
-    if np.array_equal(position_arr[j], position_arr[i]):
-        return 0
-
-    return -PARTICLE_MASS * (pressure_arr[j]/(omega_arr[j] * density_arr[j]**2) * dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
-                            + pressure_arr[i]/(omega_arr[i] * density_arr[i]**2) * dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
-
 
 # Acceleration
 def fluid_accel_viscosity_comp(j, i, position_arr, velocity_arr, density_arr, pressure_arr, smoothlength_arr, omega_arr):
-    
+
     if np.array_equal(position_arr[j], position_arr[i]):
         return 0
 
@@ -474,7 +431,6 @@ def fluid_accel_viscosity_comp(j, i, position_arr, velocity_arr, density_arr, pr
                               smoothlength_arr) * 0.5 * (dellM4_j + dellM4_i)
 
     return -PARTICLE_MASS * (accel + viscosity_correction)
-
 
 def acceleration(j, position_arr, density_arr, velocity_arr, pressure_arr, smoothlength_arr, omega_arr, xi_arr):
     acc = np.array([0., 0., 0.])
@@ -532,7 +488,6 @@ def var_smoothlength_leapfrog(pos0, vel0, energy0, h0, dt):
     h1 = newton_smoothlength_arr(pos1, h_mid)
 
     return pos1, vel1, energy1, h1
-
 
 def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlength_approx):
     """Performs the time integration.
@@ -602,46 +557,3 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
 
     return (positions_with_time, velocities_with_time,
             energies_with_time, smoothlengths_with_time)
-
-
-# MF: The static leapfrog and simulation functions are probably broken now.
-# Should decide whether to keep (and fix) them or not.
-def static_smoothlength_leapfrog(pos0, vel0, energy0, dt):
-    static_smoothlength_arr = DEFAULT_SMOOTHLENGTH*np.ones(pos0.shape[0])
-
-    den0 =      density_arr(pos0, static_smoothlength_arr)
-    press0 =    pressure_arr(energy0, den0)
-    acc0 =      acceleration_arr(pos0, den0, press0, static_smoothlength_arr)
-    pos1 = pos0 + vel0*dt + 0.5*acc0*dt**2
-
-    energy1 =   energy_evolve_arr(pos0, vel0, energy0, press0, den0, static_smoothlength_arr, dt)
-    den1 =      density_arr(pos1, static_smoothlength_arr)
-    press1 =    pressure_arr(energy1, den1)
-    acc1 =      acceleration_arr(pos1, den1, press1, static_smoothlength_arr)
-    vel1 = vel0 + 0.5*(acc0 + acc1)*dt
-
-    return pos1, vel1, energy1
-
-def static_smoothlength_sim(time, positions_with_time, velocities_with_time, energies_with_time):
-    dt = time[1] - time[0]
-
-    for t in range(len(time)-1):
-        positions_with_time[:, :, t+1], velocities_with_time[:, :, t+1], energies_with_time[:, t+1] = static_smoothlength_leapfrog(positions_with_time[:, :, t], 
-                                                                                                                        velocities_with_time[:, :, t], 
-                                                                                                                        energies_with_time[:, t], 
-                                                                                                                        dt)
-
-# RK2 is wrong; should be using new position_arr to calculate a1. We aren't using it anyways. 
-def rk2(r0, position_arr, v0, dt):
-
-    a0 = acceleration(r0, position_arr)
-
-    r1 = r0 + v0 * dt/2
-    v1 = v0 + a0 * dt/2
-
-    a1 = acceleration(r1, position_arr)
-
-    r2 = r0 + v1 * dt
-    v2 = v0 + a1 * dt
-
-    return r2, v2

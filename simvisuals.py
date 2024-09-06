@@ -4,13 +4,14 @@ import matplotlib.animation as animation
 
 # NOTE: positions defined with [time][particle][dimension]
 
-pos = np.load('pr_pos.npy')
+pos = np.load('pos.npy')
 
 fig = plt.figure()
+rad = 2e5
 ax = fig.add_subplot(111, projection='3d')
-ax.set_xlim(-2e5, 2e5)
-ax.set_ylim(-2e5, 2e5)
-ax.set_zlim(-2e5, 2e5)
+ax.set_xlim(-rad, rad)
+ax.set_ylim(-rad, rad)
+ax.set_zlim(-rad, rad)
 scat = ax.scatter(pos[0, :, 0], pos[0, :, 1], pos[0, :, 2])
 
 def update(t):
