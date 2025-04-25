@@ -7,31 +7,31 @@ import pyfluid as sph
 # NOTE: positions defined with [particle][dimension][time]
 
 # Initial definitions
-n = 5
-t = np.arange(0., 10, 0.1)
+n = 50
+t = np.arange(0., 30, 0.1)
 pos = np.zeros((n, 3, len(t)))
 xs = pos[:, 0, :]
 ys = pos[:, 1, :]
 zs = pos[:, 2, :]
 vels = np.zeros((n, 3, len(t)))
-engs = np.ones((n, len(t)))*10
+engs = np.ones((n, len(t)))*1e-59
 initial_h = np.ones((n, len(t)))
 
 # Randomly distributing particles
 rng = np.random.default_rng()
 for i in range(n):
-    pos[i, :, 0] = np.array([rng.random()*10, 
-                             rng.random()*10, 
+    pos[i, :, 0] = np.array([rng.random()*20, 
+                             rng.random()*20, 
                              0])
 
-pos[0, :, 0] = [10, 0, 0]
-vels[0, :, 0] = [0, 10, 0]
+#pos[0, :, 0] = [10, 0, 0]
+#vels[0, :, 0] = [0, 10, 0]
 
-pos[1, :, 0] = [0, 10, 0]
-vels[1, :, 0] = [-10, 0, 0]
+#pos[1, :, 0] = [0, 10, 0]
+#vels[1, :, 0] = [-10, 0, 0]
 
 # Sim
-sph.var_h_sim(t, pos, vels, engs, initial_h)
+sph.var_smoothlength_sim(t, pos, vels, engs, initial_h)
 
 
 # 2D animation
