@@ -19,15 +19,24 @@ ALPHA_SPH = 1
 BETA_SPH = 2
 EPSILON = 0.01  # TODO: We need to check that this value is suitable.
 
-# Bisection
+# Bisection 
 BISECTION_ITERATION_LIMIT = 100
 BISECTION_TOLERANCE = 1e-10
 INITIAL_BISECTION_SMOOTHLENGTH_A = 1e3
 INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
 
+# Conversion Factors
+AU_IN_METERS = 1.495978707e11
+SOLAR_MASS_IN_KG = 1.988416e30 # As of May 13, 2025
+YEAR_IN_SECONDS = 31536000
+JOULE_IN_ASTRONOMICAL = 2.2349e-38 # in AU, Solar mass and years, 1 Joule conversion
+
+# Physical Constants
+
 # G in units of years, solar masses, AU
 # 39.4324 would be slightly more accurate
 # MF: Hmm, I got 39.4227
+# JG: I got a value of 39.423025 using values from wikipedia
 #G = 4 * np.pi**2
 G = 39.4227
 
@@ -36,6 +45,7 @@ K_BOLTZMANN = 3.0856e-61
 
 # Adiabatic index (gamma):
 ADIABATIC_INDEX = 5/3
+
 
 def distance(rj, ri):
     diff = rj - ri
@@ -243,7 +253,7 @@ def var_density_arr(smoothlength_arr):
 
 
 def pressure(energy, density):
-    return (ADIABATIC_INDEX - 1) * energy * density
+    return (ADIABATIC_INDEX - 1) * energy * density * JOULE_IN_ASTRONOMICAL # added the constant to convert the energy from Joules in SI to the required astronomical units
 
 def pressure_arr(energy_arr, density_arr):
     pressure_arr = np.zeros(energy_arr.shape[0])
