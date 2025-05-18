@@ -253,7 +253,7 @@ def var_density_arr(smoothlength_arr):
 
 
 def pressure(energy, density):
-    return (ADIABATIC_INDEX - 1) * energy * density * JOULE_IN_ASTRONOMICAL # added the constant to convert the energy from Joules in SI to the required astronomical units
+    return (ADIABATIC_INDEX - 1) * energy * density
 
 def pressure_arr(energy_arr, density_arr):
     pressure_arr = np.zeros(energy_arr.shape[0])
@@ -268,7 +268,7 @@ def pressure_arr(energy_arr, density_arr):
 def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr):
     """ 
     Cossins eq. 3.85.
-    This function is called N^2 times. However, being simmetric, there are only
+    This function is called N^2 times. However, being symmetric, there are only
     N(N-1)/2 different quantities. Theres is potential for economy.
     (Except that we only do it for convergent flow, so maybe we are fine?)
     """
