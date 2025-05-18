@@ -1,6 +1,26 @@
 
 Pyfluid
+library of functions
+
+implementing the leapfrog method for calculating the position, velocity and energies
+
+static_smoothlength_sim function calls the static_smoothlength_leapfrog method which calls the density_arr, pressure_arr, acceleration_arr, energy_evolve_arr functions
+
+density_arr takes in two arrays, one for position and the other for the smoothing lengths, then calls the density function which calculates the density
+
+pressure_arr
+
+acceleration_arr
+
+energy_evolve_arr
+
+
+
 
 Pyfluidex2d_static_h
+simulation with nonvariable smoothing length
+
 
 pyfluid2d_var_h
+simulation with variable smoothing length
+
