@@ -500,8 +500,9 @@ def acceleration_arr(position_arr, density_arr, velocity_arr, pressure_arr, smoo
 
     return acc_arr
 
-
+######################################################################
 # Integration and Simulation
+######################################################################
 # Cossins 3.151
 def var_smoothlength_leapfrog(pos0, vel0, energy0, h0, dt):
     """
@@ -568,6 +569,8 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
         Velocities.
     energies : ndarray(nt, N)
         Internal energies.
+    TODO: output phi, test to see if every 5 or 10 timesteps are frequent enough to get meaningful results
+    
     """
     dt = time_arr[1] - time_arr[0]
     Nt = len(time_arr)

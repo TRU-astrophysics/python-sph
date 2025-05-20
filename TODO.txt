@@ -1,0 +1,18 @@
+
+
+Second step: Check energy conservation
+**************************************
+We already output positions, velocities and energies.
+Add code to output "phi" from the code every so often.
+Use this and equations 3.135 and 3.118 to check that energy is being conserved
+(Use smaller and smaller time-steps).
+
+3.135: E = SUM_j(m_j*(1/2 vj * vj + u_j + 1/2 Phi_j))
+
+3.118: Phi_i = G SUM_j*(mj * phi(ri - rj, epsiloni))
+
+
+I would like to refactor the code into different libraries for ease of reading, I am thinking something like:
+	1) Physical quantities: r, v, E, density, etc
+	2) Simulation requirements: Pi, xi, zeta, omega
+	3) Numerical Methods: Leapfrog integrator, RK integrator, etc
