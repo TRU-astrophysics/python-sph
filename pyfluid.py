@@ -29,7 +29,7 @@ INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
 AU_IN_METERS = 1.495978707e11
 SOLAR_MASS_IN_KG = 1.988416e30
 YEAR_IN_SECONDS = 31536000
-JOULE_IN_ASTRONOMICAL = 2.2349e-38 # in AU, Solar mass and years, 1 Joule conversion
+JOULE_IN_ASTRONOMICAL = 2.2349e-38 # in AU, Solar mass and years, 1 Joule conversion, calculated by hand
 
 # Physical Constants
 # G in units of years, solar masses, AU
@@ -44,19 +44,36 @@ K_BOLTZMANN = 3.0856e-61
 # Adiabatic index (gamma):
 ADIABATIC_INDEX = 5/3
 
+
+'''
+inputs:
+position vector of two particles
+
+output:
+the scalar magnitude of the distance between the two particles
+'''
 def distance(rj, ri):
     diff = rj - ri
     dist = np.sqrt(diff.dot(diff))
 
     return dist
+'''
+inputs: 
+position vectors of two particles
 
-# Note: direction_i_j gives direction vector FROM i TO j
+outputs: 
+the unit direction vector from i to j
+'''
 def direction_i_j(rj, ri):
     if np.array_equal(rj, ri):
         return np.zeros(3)
 
     return (rj-ri)/distance(rj, ri)
 
+
+'''
+not too sure what  the M4 methods are, looks like they're outputting the W function?
+'''
 def M4(dist, smoothlength):
     q = dist/smoothlength
     w = 1/(np.pi*smoothlength**3)*np.piecewise(q, 
