@@ -16,3 +16,39 @@ I would like to refactor the code into different libraries for ease of reading, 
 	1) Physical quantities: r, v, E, density, etc
 	2) Simulation requirements: Pi, xi, zeta, omega
 	3) Numerical Methods: Leapfrog integrator, RK integrator, etc
+
+
+New Modules
+
+sph_energy
+	total energy
+	gravitational potential
+	kinetic energy
+	internal energy with and without entropy
+	dE/dt
+	du/dt
+	xi
+
+
+sph_numerical
+	Newton's Methods
+	RK Methods
+	Leapfrog method
+	
+	
+sph_physics
+	density
+	distances
+	pressure
+	velocity
+	viscosity
+	all required derivatives
+	entropy
+	
+	
+sph_main
+	Smoothing kernal static
+	smoothing kernal variable
+	static length simulation
+	variable length simulation
+	
