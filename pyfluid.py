@@ -2,10 +2,10 @@ import numpy as np
 
 # NOTE: Need to create an array of masses if we want differing particle masses
 # ALL FUNCTIONS currently assume uniform masses
-PARTICLE_MASS = 1
+PARTICLE_MASS = 1  # This number must be modified in the run script.
 DEFAULT_SMOOTHLENGTH = 2
 
-# Coupling constant is eta in Cossins's thesis (see 3.98)
+# Coupling constant is 'eta' in Cossins's thesis (see 3.98)
 COUPLING_CONST = 1.3
 
 # Constants for determining smoothing lengths:
@@ -24,6 +24,9 @@ BISECTION_ITERATION_LIMIT = 100
 BISECTION_TOLERANCE = 1e-10
 INITIAL_BISECTION_SMOOTHLENGTH_A = 1e3
 INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
+
+# Solar mass in kg
+SOLAR_MASS = 1.988416E30
 
 # G in units of years, solar masses, AU
 # 39.4324 would be slightly more accurate
@@ -320,31 +323,27 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
     viscosity_sum = 0
 
     for i in range(velocity_arr.shape[0]):
+        vji = velocity_arr[j] - velocity_arr[i]  # Relative velocity
         density_change += PARTICLE_MASS * np.dot(
-                        velocity_arr[j] - velocity_arr[i],
+                        vji,
                         dellM4(position_arr[j], position_arr[i], 
                                                 smoothlength_arr[j]))
-
-
         
         mean_dellM4 = 0.5 * (dellM4(position_arr[j], position_arr[i], 
                                     smoothlength_arr[j])
                            + dellM4(position_arr[j], position_arr[i], 
                                     smoothlength_arr[i]))
         # MF: I am unsure if we should have vj, vji or 0.5*vji here.
-        # The thesis says vji, but I can't understand this result.
-        # Using vji ensures energy only increase due to viscosity.
-        # It also makes the overall magnitude of the energy rate due 
-        # to viscosity smaller, and more in line with the "density_change"
-        # term. I think we need a factor of 0.5 here though.
-        # TODO: investigate.
-        vji = velocity_arr[j] - velocity_arr[i]
+        # The thesis says vji, but I can't understand nk I need an
+        # extra factor of 0.5. See my notes for details.
+        # I will multiply by 0.5 outside of the loop for efficiency.
         viscosity_sum += (PARTICLE_MASS * Pi(j, i, position_arr, 
                                              velocity_arr, pressure_arr, 
                                              density_arr, smoothlength_arr) 
                           * np.dot(vji, mean_dellM4))
-                          #* np.dot(velocity_arr[j], mean_dellM4))
 
+    # This factor of 1/2 is missing in Cossins, but I believe it is needed.
+    viscosity_sum *= 0.5  
     # MF: This test could actually be inside the for loop above.
     # But that would be more expensive.
     if np.any(viscosity_sum < 0):
