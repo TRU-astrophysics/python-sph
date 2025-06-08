@@ -12,23 +12,19 @@ Use this and equations 3.135 and 3.118 to check that energy is being conserved
 3.118: Phi_i = G SUM_j*(mj * phi(ri - rj, epsiloni))
 
 
-I would like to refactor the code into different libraries for ease of reading, I am thinking something like:
-	1) Physical quantities: r, v, E, density, etc
-	2) Simulation requirements: Pi, xi, zeta, omega
-	3) Numerical Methods: Leapfrog integrator, RK integrator, etc
-
 
 New Modules
 
 sph_energy
 	total energy
-	gravitational potential
 	kinetic energy
 	internal energy with and without entropy
 	dE/dt
 	du/dt
-	xi
 
+sph_gravity
+	gravitational potential
+	xi
 
 sph_numerical
 	Newton's Methods
@@ -44,6 +40,9 @@ sph_physics
 	viscosity
 	all required derivatives
 	entropy
+
+sph_viscosity
+	pi
 	
 	
 sph_main

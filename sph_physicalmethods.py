@@ -6,7 +6,7 @@ PARTICLE_MASS = 1
 DEFAULT_SMOOTHLENGTH = 2
 
 # Coupling constant is eta in Cossins's thesis (see 3.98)
-COUPLING_CONST = 1.3
+COUPLING_CONST = 1.3 # used in variable smoothing length 
 
 # Conversion Factors, gathered from Wikipedia on May13, 2025
 AU_IN_METERS = 1.495978707e11

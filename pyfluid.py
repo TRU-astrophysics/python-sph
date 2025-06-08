@@ -376,8 +376,9 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
     viscosity_sum = 0
 
     for i in range(velocity_arr.shape[0]):
+        vji = velocity_arr[j] - velocity_arr[i]
         density_change += PARTICLE_MASS * np.dot(
-            velocity_arr[j] - velocity_arr[i],
+            vji,
             dellM4(position_arr[j], position_arr[i],
                    smoothlength_arr[j]))
 
@@ -392,8 +393,8 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
         # to viscosity smaller, and more in line with the "density_change"
         # term. I think we need a factor of 0.5 here though.
         # TODO: investigate.
-        vji = velocity_arr[j] - velocity_arr[i]
-        viscosity_sum += (PARTICLE_MASS * Pi(j, i, position_arr,
+        
+        viscosity_sum += 0.5 * (PARTICLE_MASS * Pi(j, i, position_arr,
                                              velocity_arr, pressure_arr,
                                              density_arr, smoothlength_arr)
                           * np.dot(vji, mean_dellM4))
@@ -402,7 +403,7 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
     # MF: This test could actually be inside the for loop above.
     # But that would be more expensive.
     if np.any(viscosity_sum < 0):
-        raise RuntimeError("Obtained negative energy rate due to viscosity.")
+        raise RuntimeError("Obtained negative energy rate due to viscosity.") #find when negative and why this happens
 
     return (pressure_arr[j] / (density_arr[j] ** 2 * omega_arr[j])
             * density_change + viscosity_sum)
@@ -419,6 +420,9 @@ def energy_rate_arr(position_arr, velocity_arr, pressure_arr, density_arr, smoot
 
 
 # Gravity
+# 3.120
+
+#phi
 def grav_potential(dist, smoothlength):
     """
     Cossins eq. 3.149
@@ -433,7 +437,7 @@ def grav_potential(dist, smoothlength):
                                  15 * x)),
                          -1 / dist])
 
-
+#dphi/dr
 def grav_force(dist, smoothlength):
     """
     Cossins eq. 3.148

@@ -21,7 +21,7 @@ molecular_mass = molecular_mass_kg / sph.SOLAR_MASS_IN_KG
 total_mass = 1
 
 # Current diameter of solar system in AU (Oort cloud).
-# Could go bigger as we are starting from a sparse moilecular cloud.
+# Could go bigger as we are starting from a sparse milecular cloud.
 # Wikipedia claims protoplanetary disks to be around hundreds of AU,
 # so considerably smaller than this. Could try that.
 # https://en.wikipedia.org/wiki/Formation_and_evolution_of_the_Solar_System
@@ -36,6 +36,9 @@ total_size = 2e5
 #total_time = 1e7  # 3 minutes
 total_time = 3e6  # 1 minute
 
+dt = 1e5  # Nt is approximately total_time // dt
+t = np.arange(0., total_time, dt)
+
 # Intial temperature.
 # Wikipedia claims protoplanetary disks are "cool": about 1000 K 
 # at their hottest. But should be cooler before collapsing into a disk?
@@ -44,16 +47,15 @@ total_time = 3e6  # 1 minute
 #T0 = 100  # Kelvin
 T0 = 10  # Kelvin
 
-dt = 1e5  # Nt is approximately total_time // dt
-t = np.arange(0., total_time, dt)
-
 N = 100  # Number of particles
 # This overwrites the constant during runtime. But it is ugly,
 # we should make classes for everything.
+# we should make particle mass a non-constant in the modules, I think we can make objects that take in the mass and sets it for each particle
+# 
 sph.PARTICLE_MASS = total_mass / N  # Mass per particle
 print("Particle mass: {0:0.5e}".format(sph.PARTICLE_MASS))
 
-# Could think of making the initial distribution more spherically simetric.
+# Could think of making the initial distribution more spherically symmetric.
 # A cube is kind of weird, but I don;t think it matters much.
 pos = (np.random.rand(N, 3) - 0.5) * total_size
 #np.save("temp/pos0", pos)
@@ -67,8 +69,10 @@ pos = (np.random.rand(N, 3) - 0.5) * total_size
 # L = 3.3212 x 10^45 kg m^2 s^-1 or
 # L = 2.3536 SM AU^2 / yr
 L = 2.3536 * 30 #  Had to multiply by 100 to "see" it rotating.
+
 # Angular speed of a solid sphere of same size and mass.
 w = 5 * L / (2 * total_mass * total_size**2)
+
 # Velocities are omega * z_hat cross r_i
 vels = w * np.cross(np.array([0, 0, 1]), pos)
 np.save("temp/velocities", vels)
