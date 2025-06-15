@@ -15,6 +15,25 @@ INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
 
 DEFAULT_SMOOTHLENGTH = 2
 
+
+# Cossins 3.112 - 3.115
+def zeta_j(smoothlength_j, density_j):
+    zeta = var_density(smoothlength_j) - density_j
+    return zeta
+
+def bisection(a,b,f):
+    h_a = a
+    h_b = b
+    i = 0
+    if f(h_a)*f(h_b)>0:
+        print("ERROR: root out of bounds")
+    
+    while i<BISECTION_ITERATION_LIMIT:
+        
+    return 0
+    
+def newton():
+    return 0
 # Bisection should perhaps be broken down into a series of smaller functions, like newton's method is. 
 def bisection_h(j, position_arr):
     h_a = INITIAL_BISECTION_SMOOTHLENGTH_A

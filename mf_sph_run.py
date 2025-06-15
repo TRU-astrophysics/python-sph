@@ -57,7 +57,7 @@ print("Particle mass: {0:0.5e}".format(sph.PARTICLE_MASS))
 
 # Could think of making the initial distribution more spherically symmetric.
 # A cube is kind of weird, but I don;t think it matters much.
-pos = (np.random.rand(N, 3) - 0.5) * total_size
+pos = (np.random.rand(N, 3) - 0.5) * total_size #N rows by 3 columns
 #np.save("temp/pos0", pos)
 #pos = np.load("temp/pos0.npy")
 

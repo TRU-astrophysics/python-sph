@@ -30,20 +30,18 @@ sph_numerical
 	Newton's Methods
 	RK Methods
 	Leapfrog method
+	zeta_j
 	
 	
-sph_physics
+sph_physicalmethods
 	density
 	distances
 	pressure
 	velocity
-	viscosity
 	all required derivatives
-	entropy
 
 sph_viscosity
 	pi
-	
 	
 sph_main
 	Smoothing kernal static
