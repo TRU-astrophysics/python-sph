@@ -1,4 +1,5 @@
 import numpy as np
+import sph_gravity as grav
 
 # ALL FUNCTIONS currently assume uniform masses
 PARTICLE_MASS = 1
@@ -32,17 +33,27 @@ K_BOLTZMANN = 3.0856e-61
 ADIABATIC_INDEX = 5 / 3
 
 
-def internal_energy(pressure, density):
+def internal_energy(pressure_i, density_i):
     denom = (ADIABATIC_INDEX - 1) * density
     u = pressure / denom
     return u
 
-def kinetic_energy(v):
-    E_k = .5*PARTICLE_MASS* np.dot(v,v)
+def kinetic_energy(v_i):
+    E_k = .5*PARTICLE_MASS* np.dot(v_i,v_i)
     return E_k
+
+#Cossins eq.3.118
+def grav_potential(i, position_arr, smoothlength_i):
+    pot = 0
+    for j in range(position_arr.shape[0]):
+        pot += PARTICLE_MASS * grav.grav_kernal(position_arr[i]-position_arr[j], smoothlength_i)
+    return 0.5*G*pot
     
-def total_Energy(vel_arr, press_arr, density_arr):
-    
+def total_Energy(position_arr, vel_arr, press_arr, density_arr, smoothlength_arr):
+    E = 0
+    for i in range(position_arr.shape[0]):
+        E+= (internal_energy(press_arr[i],density_arr[i]) + kinetic_energy(vel_arr[i]) + grav_potential(i, position_arr, smoothlength_arr[i]))
+    return E
 
 def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr):
     """ 

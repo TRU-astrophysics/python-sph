@@ -1,6 +1,16 @@
+import numpy as np
+
+# Physical Constants
+# G in units of years, solar masses, AU
+# 39.4324 would be slightly more accurate
+# MF: Hmm, I got 39.4227
+#G = 4 * np.pi**2
+G = 39.4227
+
 
 # Gravity
-def grav_potential(dist, smoothlength):
+
+def grav_kernal(dist, smoothlength):
     """
     Cossins eq. 3.149
     """
@@ -13,7 +23,9 @@ def grav_potential(dist, smoothlength):
                          1/smoothlength * (4/3*x**2 - x**3 + 3/10*x**4 - 1/30*x**5 - 8/5 + 1/(15*x)),
                          -1/dist])    
 
-def grav_force(dist, smoothlength):
+    
+
+def grav_kernal_spacial_derivative(dist, smoothlength):
     """
     Cossins eq. 3.148
     """
@@ -26,7 +38,9 @@ def grav_force(dist, smoothlength):
                          1/(smoothlength**2) * (8/3*x - 3*x**2 + 6/5*x**3 - 1/6*x**4 - 1/(15*x**2)),
                          1/(dist**2)]) 
 
-def grav_potential_smoothlength_derivative(dist, smoothlength):
+
+# derived quantity, not given in paper, confirmed correct 16/06/2025
+def grav_kernal_smoothlength_derivative(dist, smoothlength):
     x = dist/smoothlength
     return np.piecewise(x, 
                         [x < 1,
@@ -37,16 +51,15 @@ def grav_potential_smoothlength_derivative(dist, smoothlength):
                          0])
 
 
+# Cossins Eq. 3.132
 def xi(j, position_arr, density_j, smoothlength_j):
-    
     sum  = 0
-
     for i in range(position_arr.shape[0]):
         dist = distance(position_arr[j], position_arr[i])
         # TODO: numpy.piecewise can get an array for input. We should use it instead of this for loop!
-        sum += PARTICLE_MASS * grav_potential_smoothlength_derivative(dist, smoothlength_j)
-
-    return - smoothlength_j/(3*density_j) * sum
+        sum += PARTICLE_MASS * grav_kernal_smoothlength_derivative(dist, smoothlength_j)
+    #dh/d rho = -h/3rho from equation 3.103 
+    return -smoothlength_j/(3*density_j) * sum
 
 def xi_arr(density_arr, smoothlength_arr, position_arr):
     xi_arr = np.zeros(position_arr.shape[0])
