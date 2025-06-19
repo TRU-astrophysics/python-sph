@@ -21,7 +21,7 @@ molecular_mass = molecular_mass_kg / sph.SOLAR_MASS_IN_KG
 total_mass = 1
 
 # Current diameter of solar system in AU (Oort cloud).
-# Could go bigger as we are starting from a sparse milecular cloud.
+# Could go bigger as we are starting from a sparse molecular cloud.
 # Wikipedia claims protoplanetary disks to be around hundreds of AU,
 # so considerably smaller than this. Could try that.
 # https://en.wikipedia.org/wiki/Formation_and_evolution_of_the_Solar_System
@@ -51,7 +51,10 @@ N = 100  # Number of particles
 # This overwrites the constant during runtime. But it is ugly,
 # we should make classes for everything.
 # we should make particle mass a non-constant in the modules, I think we can make objects that take in the mass and sets it for each particle
-# 
+
+# JG: I think we can make particle objects and do oject oriented programming, that way the particle class would have its own physical traits
+# This might be a good idea as then we wouldn't have to save so many arrays they'd be all stored into a singular array of particles and accessed by methods
+
 sph.PARTICLE_MASS = total_mass / N  # Mass per particle
 print("Particle mass: {0:0.5e}".format(sph.PARTICLE_MASS))
 
@@ -68,7 +71,7 @@ pos = (np.random.rand(N, 3) - 0.5) * total_size #N rows by 3 columns
 # Total angular momentum of solar system seems to be
 # L = 3.3212 x 10^45 kg m^2 s^-1 or
 # L = 2.3536 SM AU^2 / yr
-L = 2.3536 * 30 #  Had to multiply by 100 to "see" it rotating.
+L = 2.3536 #  Had to multiply by 100 to "see" it rotating.
 
 # Angular speed of a solid sphere of same size and mass.
 w = 5 * L / (2 * total_mass * total_size**2)

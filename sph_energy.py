@@ -1,5 +1,6 @@
 import numpy as np
 import sph_gravity as grav
+import sph_physicalmethods as phys
 
 # ALL FUNCTIONS currently assume uniform masses
 PARTICLE_MASS = 1
@@ -34,8 +35,8 @@ ADIABATIC_INDEX = 5 / 3
 
 
 def internal_energy(pressure_i, density_i):
-    denom = (ADIABATIC_INDEX - 1) * density
-    u = pressure / denom
+    denom = (ADIABATIC_INDEX - 1) * density_i
+    u = pressure_i / denom
     return u
 
 def kinetic_energy(v_i):
@@ -66,7 +67,7 @@ def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength
     if v_dot_r < 0:  # Bulk viscosity only for convergent flow.
         # Compute mu
         mean_h = 0.5 * (smoothlength_arr[j] + smoothlength_arr[i])
-        dist_ij = distance(position_arr[j], position_arr[i])
+        dist_ij = phys.distance(position_arr[j], position_arr[i])
         mu = mean_h * v_dot_r / (dist_ij**2 + EPSILON * mean_h**2)
         # Compute average sound speed
         csj = (ADIABATIC_INDEX * pressure_arr[j] / density_arr[j])**0.5

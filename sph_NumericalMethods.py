@@ -18,9 +18,11 @@ DEFAULT_SMOOTHLENGTH = 2
 
 # Cossins 3.112 - 3.115
 def zeta_j(smoothlength_j, density_j):
-    zeta = var_density(smoothlength_j) - density_j
+    zeta = phys.var_density(smoothlength_j) - density_j
     return zeta
 
+# creating a general bisecion method, will also make a generalized
+# Newton's Method
 def bisection(a,b,f):
     h_a = a
     h_b = b
@@ -29,11 +31,13 @@ def bisection(a,b,f):
         print("ERROR: root out of bounds")
     
     while i<BISECTION_ITERATION_LIMIT:
-        
-    return 0
+        i +=1
+    #return 0
     
 def newton():
     return 0
+
+
 # Bisection should perhaps be broken down into a series of smaller functions, like newton's method is. 
 def bisection_h(j, position_arr):
     h_a = INITIAL_BISECTION_SMOOTHLENGTH_A
@@ -42,16 +46,16 @@ def bisection_h(j, position_arr):
 
     while i < BISECTION_ITERATION_LIMIT:
         density_a = phys.density(j, position_arr, h_a)
-        zeta_a = phys.zeta_j(h_a, density_a)
+        zeta_a = zeta_j(h_a, density_a)
         density_b = phys.density(j, position_arr, h_b)
-        zeta_b = phys.zeta_j(h_b, density_b)
+        zeta_b = zeta_j(h_b, density_b)
 
         # zeta(h_a) * zeta(h_b) must be < 0 because one must be pos and one neg, so there is a root of zeta between
         if zeta_a * zeta_b > 0:
             print("ERROR: Root out of bisection bounds.")
         
         root_candidate = (h_a + h_b)/2
-        zeta_root = phys.zeta_j(root_candidate, phys.density(j, position_arr, root_candidate))
+        zeta_root = zeta_j(root_candidate, phys.density(j, position_arr, root_candidate))
         
         if np.abs(zeta_root) < BISECTION_TOLERANCE:
             return root_candidate
@@ -70,9 +74,9 @@ def bisection_h(j, position_arr):
 def newton_smoothlength_iteration(j, position_arr, old_smoothlength_j):
 
     old_density_j = phys.density(j, position_arr, old_smoothlength_j)
-    omega = phys.omega_j(j, position_arr, old_density_j, old_smoothlength_j)
-    zeta = phys.zeta_j(old_smoothlength_j, old_density_j)
-    zetap = phys.zetaprime(old_density_j, omega, old_smoothlength_j)
+    omega = omega_j(j, position_arr, old_density_j, old_smoothlength_j)
+    zeta = zeta_j(old_smoothlength_j, old_density_j)
+    zetap = zetaprime(old_density_j, omega, old_smoothlength_j)
     new_smoothlength_j = newton_new_h(old_smoothlength_j, zeta, zetap)
 
     return new_smoothlength_j

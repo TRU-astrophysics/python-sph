@@ -1,4 +1,5 @@
 import numpy as np
+import sph_energy as eng
 
 # NOTE: Need to create an array of masses if we want differing particle masses
 # ALL FUNCTIONS currently assume uniform masses
@@ -117,8 +118,8 @@ def smoothed_gravity_acceleration_comp(j, i, position_arr, smoothlength_arr):
     # TODO: Should we put this G/2 multiplication outside the sum in acceleration()? 
     # This would mean having different for loops for each term. Not sure.
     # If we decide to do it, the same should happen to smoothed_gravity_correction_comp().
-    return -G/2 * PARTICLE_MASS * ((grav_force(dist, smoothlength_arr[j]) 
-                                  + grav_force(dist, smoothlength_arr[i]))
+    return -G/2 * PARTICLE_MASS * ((grav.grav_kernal_spacial_derivative(dist, smoothlength_arr[j])
+                                  + grav.grav_kernal_spacial_derivative(dist, smoothlength_arr[i]))
                                   * direction_i_j(position_arr[j], position_arr[i]))
 
 
@@ -161,7 +162,7 @@ def fluid_accel_viscosity_comp(j, i, position_arr, velocity_arr, density_arr, pr
     accel = (pressure_arr[j]/(omega_arr[j] * density_arr[j]**2) * dellM4_j
             + pressure_arr[i]/(omega_arr[i] * density_arr[i]**2) * dellM4_i)
 
-    viscosity_correction = Pi(j, i, position_arr, velocity_arr, 
+    viscosity_correction = eng.Pi(j, i, position_arr, velocity_arr,
                               pressure_arr, density_arr, 
                               smoothlength_arr) * 0.5 * (dellM4_j + dellM4_i)
 

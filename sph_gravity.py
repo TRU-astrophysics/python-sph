@@ -1,4 +1,5 @@
 import numpy as np
+import sph_physicalmethods as phys
 
 # Physical Constants
 # G in units of years, solar masses, AU
@@ -55,9 +56,9 @@ def grav_kernal_smoothlength_derivative(dist, smoothlength):
 def xi(j, position_arr, density_j, smoothlength_j):
     sum  = 0
     for i in range(position_arr.shape[0]):
-        dist = distance(position_arr[j], position_arr[i])
+        dist = phys.distance(position_arr[j], position_arr[i])
         # TODO: numpy.piecewise can get an array for input. We should use it instead of this for loop!
-        sum += PARTICLE_MASS * grav_kernal_smoothlength_derivative(dist, smoothlength_j)
+        sum += phys.PARTICLE_MASS * grav_kernal_smoothlength_derivative(dist, smoothlength_j)
     #dh/d rho = -h/3rho from equation 3.103 
     return -smoothlength_j/(3*density_j) * sum
 
