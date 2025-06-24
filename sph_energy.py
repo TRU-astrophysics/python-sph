@@ -1,6 +1,7 @@
 import numpy as np
 import sph_gravity as grav
 import sph_physicalmethods as phys
+import sph_NumericalMethods as num
 
 # ALL FUNCTIONS currently assume uniform masses
 PARTICLE_MASS = 1
@@ -98,7 +99,7 @@ def energy_evolve(j, position_arr, velocity_arr, energy_arr, pressure_arr, densi
     density_change = 0
     
     for i in range(velocity_arr.shape[0]):
-        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i], dellM4(position_arr[j], position_arr[i], smoothlength_j))
+        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i], num.dellM4(position_arr[j], position_arr[i], smoothlength_j))
     
     energy_change = pressure_arr[j] / density_arr[j]**2 * density_change
     
@@ -130,13 +131,13 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
         # d/dt of rho
         density_change += PARTICLE_MASS * np.dot(
                         vji,
-                        dellM4(position_arr[j], position_arr[i], smoothlength_arr[j]))
+                        num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[j]))
 
 
-        
-        mean_dellM4 = 0.5 * (dellM4(position_arr[j], position_arr[i], 
+
+        mean_dellM4 = (num.dellM4(position_arr[j], position_arr[i],
                                     smoothlength_arr[j])
-                           + dellM4(position_arr[j], position_arr[i], 
+                           + num.dellM4(position_arr[j], position_arr[i],
                                     smoothlength_arr[i]))
         # MF: I am unsure if we should have vj, vji or 0.5*vji here.
         # The thesis says vji, but I can't understand this result.
@@ -144,6 +145,8 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
         # It also makes the overall magnitude of the energy rate due 
         # to viscosity smaller, and more in line with the "density_change"
         # term. I think we need a factor of 0.5 here though.
+        # JG: I found an oddity, not sure if it's this term. I am removing the 0.5 factor and
+        # seeing if this changes what I found
         # TODO: investigate.
         
         #d/dt of kappa

@@ -1,5 +1,7 @@
 import numpy as np
 import sph_energy as eng
+import sph_NumericalMethods as num
+import sph_gravity as grav
 
 # NOTE: Need to create an array of masses if we want differing particle masses
 # ALL FUNCTIONS currently assume uniform masses
@@ -61,7 +63,7 @@ def direction_i_j(rj, ri):
 
 # MF: Functions like this one that are one line long are not helpful I think.
 def density_comp(j, i, position_arr, smoothlength_j):
-    return PARTICLE_MASS * M4(distance(position_arr[j], position_arr[i]), smoothlength_j)
+    return PARTICLE_MASS * num.M4(distance(position_arr[j], position_arr[i]), smoothlength_j)
 
 def density(j, position_arr, smoothlength_j):
     density = 0
@@ -125,17 +127,15 @@ def smoothed_gravity_acceleration_comp(j, i, position_arr, smoothlength_arr):
 
 # Cossins 3.133
 def smoothed_gravity_correction_comp(j, i, position_arr, smoothlength_arr, omega_arr, xi_arr):
-
-    return -G/2 * PARTICLE_MASS * (xi_arr[j]/omega_arr[j] * dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
-                                  + xi_arr[i]/omega_arr[i] * dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
+    # Added another term of particle mass as there was one inside and outside the summation in eq.3.133
+    return -G/2 * PARTICLE_MASS**2 * (xi_arr[j]/omega_arr[j] * num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
+                                  + xi_arr[i]/omega_arr[i] * num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
 
 
 # Newton's Law of Gravitation
 def basic_gravity_acceleration_comp(j, i, position_arr):
-    
     if np.array_equal(position_arr[j], position_arr[i]):
         return 0
-    
     return -direction_i_j(position_arr[j], position_arr[i]) * G/distance(position_arr[j], position_arr[i])**2
 
 
@@ -146,8 +146,8 @@ def fluid_acceleration_comp(j, i, position_arr, density_arr, pressure_arr, smoot
     if np.array_equal(position_arr[j], position_arr[i]):
         return 0
 
-    return -PARTICLE_MASS * (pressure_arr[j]/(omega_arr[j] * density_arr[j]**2) * dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
-                            + pressure_arr[i]/(omega_arr[i] * density_arr[i]**2) * dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
+    return -PARTICLE_MASS * (pressure_arr[j]/(omega_arr[j] * density_arr[j]**2) * num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
+                            + pressure_arr[i]/(omega_arr[i] * density_arr[i]**2) * num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[i]))
 
 
 # Acceleration
@@ -156,9 +156,10 @@ def fluid_accel_viscosity_comp(j, i, position_arr, velocity_arr, density_arr, pr
     if np.array_equal(position_arr[j], position_arr[i]):
         return 0
 
-    dellM4_j = dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
-    dellM4_i = dellM4(position_arr[j], position_arr[i], smoothlength_arr[i])
+    dellM4_j = num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[j])
+    dellM4_i = num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[i])
 
+    # Cossins 3.110
     accel = (pressure_arr[j]/(omega_arr[j] * density_arr[j]**2) * dellM4_j
             + pressure_arr[i]/(omega_arr[i] * density_arr[i]**2) * dellM4_i)
 

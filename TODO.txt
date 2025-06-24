@@ -21,6 +21,7 @@ sph_energy
 	internal energy with and without entropy
 	dE/dt
 	du/dt
+	pi
 
 sph_gravity
 	gravitational potential
