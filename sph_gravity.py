@@ -18,7 +18,7 @@ def grav_kernal(dist, smoothlength):
     x = dist/smoothlength
     return np.piecewise(x, 
                         [x < 1,
-                         x >= 1 and x < 2,
+                         1 <= x < 2,
                          x >= 2],
                         [1/smoothlength * (2/3*x**2 - 3/10*x**3 + 1/10*x**5 - 7/5), 
                          1/smoothlength * (4/3*x**2 - x**3 + 3/10*x**4 - 1/30*x**5 - 8/5 + 1/(15*x)),

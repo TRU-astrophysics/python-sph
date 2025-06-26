@@ -40,22 +40,29 @@ def internal_energy(pressure_i, density_i):
     u = pressure_i / denom
     return u
 
+
 def kinetic_energy(v_i):
-    E_k = .5*PARTICLE_MASS* np.dot(v_i,v_i)
+    E_k = .5 * PARTICLE_MASS * np.dot(v_i, v_i)
     return E_k
+
 
 #Cossins eq.3.118
 def grav_potential(i, position_arr, smoothlength_i):
     pot = 0
     for j in range(position_arr.shape[0]):
-        pot += PARTICLE_MASS * grav.grav_kernal(position_arr[i]-position_arr[j], smoothlength_i)
-    return 0.5*G*pot
-    
+        pot += PARTICLE_MASS * grav.grav_kernal(position_arr[i] - position_arr[j], smoothlength_i)
+    return 0.5 * G * pot
+
+
 def total_Energy(position_arr, vel_arr, press_arr, density_arr, smoothlength_arr):
     E = 0
     for i in range(position_arr.shape[0]):
-        E+= (internal_energy(press_arr[i],density_arr[i]) + kinetic_energy(vel_arr[i]) + grav_potential(i, position_arr, smoothlength_arr[i]))
+        E += (internal_energy(press_arr[i], density_arr[i]) + kinetic_energy(vel_arr[i]) + grav_potential(i,
+                                                                                                          position_arr,
+                                                                                                          smoothlength_arr[
+                                                                                                              i]))
     return E
+
 
 def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr):
     """ 
@@ -69,14 +76,14 @@ def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength
         # Compute mu
         mean_h = 0.5 * (smoothlength_arr[j] + smoothlength_arr[i])
         dist_ij = phys.distance(position_arr[j], position_arr[i])
-        mu = mean_h * v_dot_r / (dist_ij**2 + EPSILON * mean_h**2)
+        mu = mean_h * v_dot_r / (dist_ij ** 2 + EPSILON * mean_h ** 2)
         # Compute average sound speed
-        csj = (ADIABATIC_INDEX * pressure_arr[j] / density_arr[j])**0.5
-        csi = (ADIABATIC_INDEX * pressure_arr[i] / density_arr[i])**0.5
+        csj = (ADIABATIC_INDEX * pressure_arr[j] / density_arr[j]) ** 0.5
+        csi = (ADIABATIC_INDEX * pressure_arr[i] / density_arr[i]) ** 0.5
         cs = 0.5 * (csi + csj)
         # Compute mean density
         mean_density = 0.5 * (density_arr[j] + density_arr[i])
-        Pi_value = (- ALPHA_SPH * cs * mu + BETA_SPH * mu**2) / mean_density
+        Pi_value = (- ALPHA_SPH * cs * mu + BETA_SPH * mu ** 2) / mean_density
         if Pi_value < 0:
             raise RuntimeError("Obtained negative value for Pi")
         return Pi_value
@@ -97,20 +104,23 @@ def energy_evolve(j, position_arr, velocity_arr, energy_arr, pressure_arr, densi
     This is what I did for the version with viscosity.
     """
     density_change = 0
-    
+
     for i in range(velocity_arr.shape[0]):
-        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i], num.dellM4(position_arr[j], position_arr[i], smoothlength_j))
-    
-    energy_change = pressure_arr[j] / density_arr[j]**2 * density_change
-    
+        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i],
+                                                 num.dellM4(position_arr[j], position_arr[i], smoothlength_j))
+
+    energy_change = pressure_arr[j] / density_arr[j] ** 2 * density_change
+
     return energy_arr[j] + energy_change * dt
 
 
-def energy_evolve_arr(position_arr, velocity_arr, energies_initial, pressure_arr, density_arr, smoothlength_arr, omega_arr, dt):
+def energy_evolve_arr(position_arr, velocity_arr, energies_initial, pressure_arr, density_arr, smoothlength_arr,
+                      omega_arr, dt):
     energies_final = np.zeros(position_arr.shape[0])
 
     for i in range(position_arr.shape[0]):
-        energies_final[i] = energy_evolve(i, position_arr, velocity_arr, energies_initial, pressure_arr, density_arr, smoothlength_arr[i], dt)
+        energies_final[i] = energy_evolve(i, position_arr, velocity_arr, energies_initial, pressure_arr, density_arr,
+                                          smoothlength_arr[i], dt)
 
     return energies_final
 
@@ -126,19 +136,16 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
     viscosity_sum = 0
 
     for i in range(velocity_arr.shape[0]):
-        
         vji = velocity_arr[j] - velocity_arr[i]
         # d/dt of rho
         density_change += PARTICLE_MASS * np.dot(
-                        vji,
-                        num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[j]))
+            vji,
+            num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[j]))
 
-
-
-        mean_dellM4 = (num.dellM4(position_arr[j], position_arr[i],
-                                    smoothlength_arr[j])
-                           + num.dellM4(position_arr[j], position_arr[i],
-                                    smoothlength_arr[i]))
+        mean_dellM4 = 0.5 * (num.dellM4(position_arr[j], position_arr[i],
+                                        smoothlength_arr[j])
+                             + num.dellM4(position_arr[j], position_arr[i],
+                                          smoothlength_arr[i]))
         # MF: I am unsure if we should have vj, vji or 0.5*vji here.
         # The thesis says vji, but I can't understand this result.
         # Using vji ensures energy only increase due to viscosity.
@@ -148,20 +155,20 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
         # JG: I found an oddity, not sure if it's this term. I am removing the 0.5 factor and
         # seeing if this changes what I found
         # TODO: investigate.
-        
+
         #d/dt of kappa
-        viscosity_sum += (PARTICLE_MASS * Pi(j, i, position_arr, 
-                                             velocity_arr, pressure_arr, 
-                                             density_arr, smoothlength_arr) 
-                          * np.dot(vji, mean_dellM4))
-                          #* np.dot(velocity_arr[j], mean_dellM4))
+        viscosity_sum += 0.5 * (PARTICLE_MASS * Pi(j, i, position_arr,
+                                                   velocity_arr, pressure_arr,
+                                                   density_arr, smoothlength_arr)
+                                * np.dot(vji, mean_dellM4))
+        #* np.dot(velocity_arr[j], mean_dellM4))
 
     # MF: This test could actually be inside the for loop above.
     # But that would be more expensive.
     if np.any(viscosity_sum < 0):
         raise RuntimeError("Obtained negative energy rate due to viscosity.")
 
-    return (pressure_arr[j] / (density_arr[j]**2 * omega_arr[j]) 
+    return (pressure_arr[j] / (density_arr[j] ** 2 * omega_arr[j])
             * density_change + viscosity_sum)
 
 
@@ -169,6 +176,7 @@ def energy_rate_arr(position_arr, velocity_arr, pressure_arr, density_arr, smoot
     energy_rate_array = np.zeros(position_arr.shape[0])
 
     for i in range(position_arr.shape[0]):
-        energy_rate_array[i] = energy_rate(i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr, omega_arr)
+        energy_rate_array[i] = energy_rate(i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr,
+                                           omega_arr)
 
     return energy_rate_array

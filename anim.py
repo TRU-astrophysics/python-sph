@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 
 # 3D animation
 df = 5  # decimation factor
-pos = np.load("C:\\Users\\John\\Documents\\GitHub\\python-sph\\temp\\pos.npy")
+pos = np.load("temp/pos.npy")
 # pos = np.load("run_logs/run002/pos.npy")
 
 xx = pos[::df, :, 0]

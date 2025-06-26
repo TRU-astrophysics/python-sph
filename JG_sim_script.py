@@ -1,8 +1,6 @@
 # Generates a simple system to test SPH functionalities and gather simple
 # data for analysis
-#
-
-# requirements
+# Other Dependencies
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -54,6 +52,7 @@ dt = 1e5 # initial test to see if any errors are found
 # if energy is conserved
 #dt = [1e5, 1e4, 1e3]
 t = np.arange(0., total_time, dt)
+Nt = total_time/dt
 
 ###############################
 # Defining Particle Positions #
@@ -63,7 +62,10 @@ t = np.arange(0., total_time, dt)
 # https://en.wikipedia.org/wiki/Formation_and_evolution_of_the_Solar_System
 total_size = 2e5
 
-pos = (np.random.rand(N,3) - 0.5) * total_size
+#pos = (np.random.rand(N,3) - 0.5) * total_size
+# Saving initial positions for later use
+#np.save("temp/pos0", pos)
+pos = np.load("temp/pos0.npy")
 
 ################################
 # Defining Particle Velocities #
@@ -73,27 +75,27 @@ pos = (np.random.rand(N,3) - 0.5) * total_size
 # Total angular momentum of solar system seems to be
 # L = 3.3212 x 10^45 kg m^2 s^-1 or
 # L = 2.3536 SM AU^2 / yr
-L = 2.3536 #  Had to multiply by 100 to "see" it rotating.
-
+# L = 2.3536 #  Had to multiply by 100 to "see" it rotating.
+L = 0 # arbitrary, I am seeing only expansion, not contraction
 # Angular speed of a solid sphere of same size and mass.
 w = 5 * L / (2 * total_mass * total_size**2)
 
 # Velocities are omega * z_hat cross r_i
-vels = w * np.cross(np.array([0, 0, 1]), pos)
+# IDE states this line of code is unreachable
+# I am finding that this method of getting initial velocities causes an expansion of the gas cloud
+#vels = w * np.cross(np.array([0, 0, 1]), pos)
+vels = np.zeros((N,3))
 
 ##############################
 # Defining Particle Energies #
 ##############################
 
 # Initial Temperature
-# I am going with the current background temperature to see if
-# oddities i've found were due to temperature
-# T0 = 10
-T0 = 3 # Kelvin
+T0 = 10
 # Keep it uniform energy for now.
-engs = np.ones(N) * (1 / (phys.ADIABATIC_INDEX - 1) * erg.K_BOLTZMANN
-                                            * T0 / molecular_mass)
-
+#engs = np.ones(N) * (1 / (phys.ADIABATIC_INDEX - 1) * erg.K_BOLTZMANN
+#                                            * T0 / molecular_mass)
+engs = np.zeros(N)
 # Intial guess should be eta times mean distance between particles:
 initial_h = np.ones(N) * phys.COUPLING_CONST * total_size / N**(1/3)
 
@@ -107,10 +109,8 @@ print("T0", T0)
 print("dt", dt)
 print("N", N)
 print("L", L)
+print("time steps", Nt)
 
-# Saving initial positions for later use
-#np.save("temp/pos0", pos)
-pos = np.load("temp/pos0.npy")
 
 # Sim
 start = time.time()
@@ -132,6 +132,7 @@ np.save("temp/velocities", vels)
 # 3D animation #
 ################
 
+print("Animating simulation...")
 df = 5  # decimation factor
 pos = np.load("temp/pos.npy")
 # pos = np.load("run_logs/run002/pos.npy")
@@ -157,3 +158,5 @@ ani = anim.FuncAnimation(fig=fig, func=update, frames=xx.shape[0], interval=100)
 
 writer = anim.PillowWriter(fps=30)
 ani.save(filename="SPH_3D.gif", writer="pillow")
+
+print("Animation Complete")
