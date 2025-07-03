@@ -33,10 +33,7 @@ total_mass = 1
 N = 100
 
 particleMass = total_mass/N
-# I have to fix this in both modules, but for now I'll just redefine both
-# particle masses in phys and erg
 phys.PARTICLE_MASS = particleMass
-erg.PARTICLE_MASS = particleMass
 
 #################
 # Defining Time #
@@ -62,16 +59,14 @@ Nt = total_time/dt
 # https://en.wikipedia.org/wiki/Formation_and_evolution_of_the_Solar_System
 total_size = 2e5
 
-#pos = (np.random.rand(N,3) - 0.5) * total_size
+pos = (np.random.rand(N,3) - 0.5) * total_size
 # Saving initial positions for later use
-#np.save("temp/pos0", pos)
-pos = np.load("temp/pos0.npy")
+np.save("temp/pos0", pos)
+#pos = np.load("temp/pos0.npy")
 
 ################################
 # Defining Particle Velocities #
 ################################
-
-
 # Total angular momentum of solar system seems to be
 # L = 3.3212 x 10^45 kg m^2 s^-1 or
 # L = 2.3536 SM AU^2 / yr
@@ -93,9 +88,9 @@ vels = np.zeros((N,3))
 # Initial Temperature
 T0 = 10
 # Keep it uniform energy for now.
-#engs = np.ones(N) * (1 / (phys.ADIABATIC_INDEX - 1) * erg.K_BOLTZMANN
-#                                            * T0 / molecular_mass)
-engs = np.zeros(N)
+engs = np.ones(N) * (1 / (phys.ADIABATIC_INDEX - 1) * erg.K_BOLTZMANN
+                                            * T0 / molecular_mass)
+#engs = np.zeros(N)
 # Intial guess should be eta times mean distance between particles:
 initial_h = np.ones(N) * phys.COUPLING_CONST * total_size / N**(1/3)
 
@@ -110,6 +105,7 @@ print("dt", dt)
 print("N", N)
 print("L", L)
 print("time steps", Nt)
+print("Initial smooth length: ", initial_h[0])
 
 
 # Sim
@@ -118,15 +114,15 @@ sim_results = sim.var_smoothlength_sim(t, pos, vels, engs, initial_h)
 end = time.time()
 print("Runtime: {0:0.3e}".format(end - start))
 
-
+# Saving results to calculate the energy changes
 np.save("temp/pos", sim_results[0])
 np.save("temp/vel", sim_results[1])
 np.save("temp/ener", sim_results[2])
-#np.save("hs", sim_results[3])
+np.save("temp/hs", sim_results[3])
 
 # Saving required parameters
 np.save("temp/velocities", vels)
-
+np.save("temp/time", t)
 
 ################
 # 3D animation #

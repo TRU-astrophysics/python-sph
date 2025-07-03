@@ -43,6 +43,7 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
         Velocities.
     energies : ndarray(nt, N)
         Internal energies.
+    smoothlengths_with_time : ndarray(Nt, N)
     TODO: output phi, test to see if every 5 or 10 timesteps are frequent enough to get meaningful results
     
     """
@@ -58,9 +59,6 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
     energies_with_time = np.zeros((Nt, N))
     smoothlengths_with_time = np.zeros((Nt, N))
 
-    # For testing, adding a total energy calculator
-    total_energy = np.zeros(Nt)
-
     # Assign initial conditions
     positions_with_time[0, :, :] = positions0
     velocities_with_time[0, :, :] = velocities0
@@ -69,6 +67,9 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
     smoothlengths_with_time[0, :] = num.newton_smoothlength_arr(
         positions_with_time[0, :, :],
         smoothlength_approx)
+
+    if np.any(smoothlengths_with_time[0,:]):
+        print("zero smoothlength given")
 
     # MF: We might not be able to keep all the data like this.
     # Think of a scheme to write to disk, maybe every many time steps.
@@ -86,20 +87,8 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
             smoothlengths_with_time[t, :],
             dt)
 
-        # added quantities for total energy calculations
-        density = phys.var_density_arr(smoothlengths_with_time[t,:])
-
-        pressure = phys.pressure_arr(energies_with_time[t,:], density )
-        # TODO I need to figure out how to use the position array
-        # with the grav_kernal function in sph_gravity
-        total_energy[t] = erg.total_Energy(
-            positions_with_time[t,:,:],
-            velocities_with_time[t,:,:],
-            pressure,
-            density,
-            smoothlengths_with_time[t,:]
-        )
+        if np.any(smoothlengths_with_time[t,:]):
+            print("zero smoothlength given")
 
     return (positions_with_time, velocities_with_time,
-            energies_with_time, smoothlengths_with_time,
-            total_energy)
+            energies_with_time, smoothlengths_with_time)

@@ -4,7 +4,6 @@ import sph_physicalmethods as phys
 import sph_NumericalMethods as num
 
 # ALL FUNCTIONS currently assume uniform masses
-PARTICLE_MASS = 1
 DEFAULT_SMOOTHLENGTH = 2
 
 # Coupling constant is eta in Cossins's thesis (see 3.98)
@@ -42,7 +41,7 @@ def internal_energy(pressure_i, density_i):
 
 
 def kinetic_energy(v_i):
-    E_k = .5 * PARTICLE_MASS * np.dot(v_i, v_i)
+    E_k = .5 * phys.PARTICLE_MASS * np.dot(v_i, v_i)
     return E_k
 
 
@@ -50,17 +49,16 @@ def kinetic_energy(v_i):
 def grav_potential(i, position_arr, smoothlength_i):
     pot = 0
     for j in range(position_arr.shape[0]):
-        pot += PARTICLE_MASS * grav.grav_kernal(position_arr[i] - position_arr[j], smoothlength_i)
+        pot += phys.PARTICLE_MASS * grav.grav_kernal(phys.distance(position_arr[j], position_arr[i]), smoothlength_i)
     return 0.5 * G * pot
 
 
 def total_Energy(position_arr, vel_arr, press_arr, density_arr, smoothlength_arr):
     E = 0
     for i in range(position_arr.shape[0]):
-        E += (internal_energy(press_arr[i], density_arr[i]) + kinetic_energy(vel_arr[i]) + grav_potential(i,
-                                                                                                          position_arr,
-                                                                                                          smoothlength_arr[
-                                                                                                              i]))
+        E += (internal_energy(press_arr[i], density_arr[i])
+              + kinetic_energy(vel_arr[i])
+              + grav_potential(i, position_arr, smoothlength_arr[i]))
     return E
 
 
@@ -68,7 +66,7 @@ def Pi(j, i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength
     """ 
     Cossins eq. 3.85.
     This function is called N^2 times. However, being symmetric, there are only
-    N(N-1)/2 different quantities. Theres is potential for economy.
+    N(N-1)/2 different quantities. There is potential for economy.
     (Except that we only do it for convergent flow, so maybe we are fine?)
     """
     v_dot_r = np.dot(position_arr[j] - position_arr[i], velocity_arr[j] - velocity_arr[i])
@@ -106,7 +104,7 @@ def energy_evolve(j, position_arr, velocity_arr, energy_arr, pressure_arr, densi
     density_change = 0
 
     for i in range(velocity_arr.shape[0]):
-        density_change += PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i],
+        density_change += phys.PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i],
                                                  num.dellM4(position_arr[j], position_arr[i], smoothlength_j))
 
     energy_change = pressure_arr[j] / density_arr[j] ** 2 * density_change
@@ -138,7 +136,7 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
     for i in range(velocity_arr.shape[0]):
         vji = velocity_arr[j] - velocity_arr[i]
         # d/dt of rho
-        density_change += PARTICLE_MASS * np.dot(
+        density_change += phys.PARTICLE_MASS * np.dot(
             vji,
             num.dellM4(position_arr[j], position_arr[i], smoothlength_arr[j]))
 
@@ -157,7 +155,7 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
         # TODO: investigate.
 
         #d/dt of kappa
-        viscosity_sum += 0.5 * (PARTICLE_MASS * Pi(j, i, position_arr,
+        viscosity_sum += 0.5 * (phys.PARTICLE_MASS * Pi(j, i, position_arr,
                                                    velocity_arr, pressure_arr,
                                                    density_arr, smoothlength_arr)
                                 * np.dot(vji, mean_dellM4))
