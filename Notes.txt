@@ -1,4 +1,18 @@
-Total energy function, line 95 in sph_sim.py has an error in it.
-The error pathway goes to line 62 of sph_energy.py in the grav_potential, I think it's due to position_arr
+primarily using var_smooth_length_sim
 
-I tried changing the input from the total energy position array to 3D array but it didn't work.
+inputs are:
+ - time_arr: ndarray(Nt)
+ - positions0: ndarray(N,3)
+ - velocities0: ndarray(N,3)
+ - energies0: ndarray(N)
+ smoothlength_approx: ndarray(N)
+
+outputs:
+ - positions: ndarray(Nt, N, 3)
+ - velocities: ndarray(Nt, N, 3)
+ - energies: ndarray(Nt, N)
+ - smoothlengths_with_time : ndarray(Nt, N)
+ 
+ I think the smoothlengths are somehow becoming zero at some point, we need to fix this
+ 
+ 
