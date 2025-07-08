@@ -49,7 +49,10 @@ def kinetic_energy(v_i):
 def grav_potential(i, position_arr, smoothlength_i):
     pot = 0
     for j in range(position_arr.shape[0]):
-        pot += phys.PARTICLE_MASS * grav.grav_kernal(phys.distance(position_arr[j], position_arr[i]), smoothlength_i)
+        if i==j:
+            pot+=0
+        else:
+            pot += phys.PARTICLE_MASS * grav.grav_kernal(phys.distance(position_arr[j], position_arr[i]), smoothlength_i)
     return 0.5 * G * pot
 
 
