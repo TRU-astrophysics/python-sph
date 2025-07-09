@@ -76,10 +76,7 @@ L = 0 # arbitrary, I am seeing only expansion, not contraction
 w = 5 * L / (2 * total_mass * total_size**2)
 
 # Velocities are omega * z_hat cross r_i
-# IDE states this line of code is unreachable
-# I am finding that this method of getting initial velocities causes an expansion of the gas cloud
-#vels = w * np.cross(np.array([0, 0, 1]), pos)
-vels = np.zeros((N,3))
+vels = w * np.cross(np.array([0, 0, 1]), pos)
 
 ##############################
 # Defining Particle Energies #

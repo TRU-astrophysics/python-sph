@@ -68,9 +68,6 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
         positions_with_time[0, :, :],
         smoothlength_approx)
 
-    if np.any(smoothlengths_with_time[0,:]):
-        print("zero smoothlength given")
-
     # MF: We might not be able to keep all the data like this.
     # Think of a scheme to write to disk, maybe every many time steps.
     # We could also just keep positions. No one is going to plot velocities?
@@ -86,9 +83,6 @@ def var_smoothlength_sim(time_arr, positions0, velocities0, energies0, smoothlen
             energies_with_time[t, :],
             smoothlengths_with_time[t, :],
             dt)
-
-        if np.any(smoothlengths_with_time[t,:]):
-            print("zero smoothlength given")
 
     return (positions_with_time, velocities_with_time,
             energies_with_time, smoothlengths_with_time)

@@ -1,0 +1,147 @@
+# Using this script to set up all the relevant variables and collect the total energy
+# There will be no animations in this script
+# Generates a simple system to test SPH functionalities and gather simple
+# data for analysis
+# Other Dependencies
+import numpy as np
+import time
+import matplotlib.pyplot as plt
+import matplotlib.animation as anim
+
+# SPH Specific imports
+import sph_sim as sim
+import sph_physicalmethods as phys
+import sph_energy as erg
+
+# Define everything similarly to mf_sph_run.py and anim.py
+# Positions are defined as [time][particle][dimension]
+# time from 0 to total_time in step sizes dt
+# particle defined from 0 to N, unit steps
+# dimension defined from 0 to 2, 0 == x, 1 == y, 2 == z
+
+##########################
+# Defining Particle Mass #
+##########################
+# Avogadro's Number
+Na = 6.02214076e23
+# Molecular mass in kg. Assuming H2 molecules
+molecular_mass_kg = 2.016e-3 / Na
+# Molecular mass in Solar masses.
+molecular_mass = molecular_mass_kg / phys.SOLAR_MASS_IN_KG
+
+# Simulating the solar system. Mass is 1 Solar Mass.
+total_mass = 1
+N = 100
+phys.PARTICLE_MASS = total_mass/N
+
+###############################
+# Defining Particle Positions #
+###############################
+
+# Current diameter of solar system in AU (Oort cloud).
+# https://en.wikipedia.org/wiki/Formation_and_evolution_of_the_Solar_System
+total_size = 2e5
+
+#pos = (np.random.rand(N,3) - 0.5) * total_size
+# Saving initial positions for later use
+#np.save("temp/pos0", pos)
+pos = np.load("temp/pos0.npy") # using a known good initial positions
+
+################################
+# Defining Particle Velocities #
+################################
+# Total angular momentum of solar system seems to be
+# L = 3.3212 x 10^45 kg m^2 s^-1 or
+# L = 2.3536 SM AU^2 / yr
+L = 2.3536 #  Had to multiply by 100 to "see" it rotating.
+# L = 0 # arbitrary, I am seeing only expansion, not contraction
+# Angular speed of a solid sphere of same size and mass.
+w = 5 * L / (2 * total_mass * total_size**2)
+
+# Velocities are omega * z_hat cross r_i
+# vels = w * np.ones((N,3))
+# print(vels[0,:])
+vels = w * np.cross(np.array([0, 0, 1]), pos)
+# pycharm states that the above function is not reachable?
+# This is an IDE error and I tested to see if there would be a change before and after
+print(vels[0,:])
+
+##############################
+# Defining Particle Energies #
+##############################
+
+# Initial Temperature
+T0 = 10
+# Keep it uniform energy for now.
+engs = np.ones(N) * (1 / (phys.ADIABATIC_INDEX - 1) * erg.K_BOLTZMANN
+                                            * T0 / molecular_mass)
+#engs = np.zeros(N)
+# Intial guess should be eta times mean distance between particles:
+initial_h = np.ones(N) * phys.COUPLING_CONST * total_size / N**(1/3)
+
+#################
+# Defining Time #
+#################
+# 3 Million years. Solar system took 600 Myrs to form but disk formed
+# in the first 3 million. See here:
+# https://spacemath.gsfc.nasa.gov/Grade35/10Page6.pdf
+total_time = 3e6
+# Defining Nt as an array, then going to run each simulation based on this
+#Nt = np.array([5,10,20,50,100])
+Nt = np.array([10])
+
+#dt = 1e5 # initial test to see if any errors are found
+# running the simulation multiple times with smaller time steps to determine
+# if energy is conserved
+#dt = [1e5, 1e4, 1e3]
+#t = np.arange(0., total_time, dt)
+#Nt = total_time/dt
+
+##################################
+# Showing all defined parameters #
+##################################
+print("Total_mass", total_mass)
+print("Total_size", total_size)
+print("Total_time", total_time)
+print("T0", T0)
+# print("dt", dt)
+print("N", N)
+print("L", L)
+print("time steps", Nt)
+print("Initial smooth length: ", initial_h[0])
+
+##############################
+# Setting up the Scatterplot #
+##############################
+
+plt.title("Total Energy over time, various dt")
+plt.xlabel("Time")
+plt.ylabel("Total Energy")
+
+
+#####################################################
+# Running the simulation and collecting energy data #
+#####################################################
+for n in Nt:
+    t = np.linspace(0., total_time, n) # creates a time array of size n from 0 to total_time
+    total_energy = np.zeros(len(t))
+    # run simulation
+    start = time.time()
+    pos_arr, vel_arr, erg_arr, h_arr = sim.var_smoothlength_sim(t, pos, vels, engs, initial_h)
+    end = time.time()
+    print("Runtime: {0:0.3e}".format(end - start))
+    # calculate total energy
+    for i in range(n):
+        density = phys.density_arr(pos_arr[i, :, :], h_arr[i, :])
+        pressure = phys.pressure_arr(erg_arr[i, :], density)
+        total_energy[i] += erg.total_Energy(
+            pos_arr[i, :, :],
+            vel_arr[i, :, :],
+            pressure,
+            density,
+            h_arr[i, :])
+    # plot energy over time
+    plt.plot(t, total_energy, label=f"{n} steps")
+# show plot
+plt.savefig("Total Energy over times")
+plt.show()

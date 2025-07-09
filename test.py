@@ -34,5 +34,10 @@ for t in range(Nt):
         density,
         hs[t,:])
 
-plt.scatter(ttime,total_energy)
+plt.title("Total Energy over time, various dt")
+plt.xlabel("Time")
+plt.ylabel(r"Total Energy")
+plt.grid()
+plt.plot(ttime,total_energy, label=f"{Nt} steps")
+plt.legend()
 plt.show()
