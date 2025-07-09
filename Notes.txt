@@ -13,6 +13,7 @@ outputs:
  - energies: ndarray(Nt, N)
  - smoothlengths_with_time : ndarray(Nt, N)
  
- I think the smoothlengths are somehow becoming zero at some point, we need to fix this
+ Need to run simulation multiple times, then calculate the total change in energy over time for each simulation
+ I will store the energy changes into an array that will then be used to plot each total energy onto the same plot
  
- 
+ I might be able to get around the use of a total energy array and just plot between runs and then show the plot after the algorithm has completed each
