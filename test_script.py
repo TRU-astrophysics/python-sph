@@ -32,7 +32,7 @@ molecular_mass = molecular_mass_kg / phys.SOLAR_MASS_IN_KG
 # Simulating the solar system. Mass is 1 Solar Mass.
 total_mass = 1
 N = 100
-phys.PARTICLE_MASS = total_mass/N
+phys.PARTICLE_MASS = total_mass / N
 
 ###############################
 # Defining Particle Positions #
@@ -45,7 +45,7 @@ total_size = 2e5
 #pos = (np.random.rand(N,3) - 0.5) * total_size
 # Saving initial positions for later use
 #np.save("temp/pos0", pos)
-pos = np.load("temp/pos0.npy") # using a known good initial positions
+pos = np.load("temp/pos0.npy")  # using a known good initial positions
 
 ################################
 # Defining Particle Velocities #
@@ -53,10 +53,10 @@ pos = np.load("temp/pos0.npy") # using a known good initial positions
 # Total angular momentum of solar system seems to be
 # L = 3.3212 x 10^45 kg m^2 s^-1 or
 # L = 2.3536 SM AU^2 / yr
-L = 2.3536 #  Had to multiply by 100 to "see" it rotating.
+L = 2.3536  #  Had to multiply by 100 to "see" it rotating.
 # L = 0 # arbitrary, I am seeing only expansion, not contraction
 # Angular speed of a solid sphere of same size and mass.
-w = 5 * L / (2 * total_mass * total_size**2)
+w = 5 * L / (2 * total_mass * total_size ** 2)
 
 # Velocities are omega * z_hat cross r_i
 # vels = w * np.ones((N,3))
@@ -64,7 +64,6 @@ w = 5 * L / (2 * total_mass * total_size**2)
 vels = w * np.cross(np.array([0, 0, 1]), pos)
 # pycharm states that the above function is not reachable?
 # This is an IDE error and I tested to see if there would be a change before and after
-print(vels[0,:])
 
 ##############################
 # Defining Particle Energies #
@@ -74,10 +73,10 @@ print(vels[0,:])
 T0 = 10
 # Keep it uniform energy for now.
 engs = np.ones(N) * (1 / (phys.ADIABATIC_INDEX - 1) * erg.K_BOLTZMANN
-                                            * T0 / molecular_mass)
+                     * T0 / molecular_mass)
 #engs = np.zeros(N)
 # Intial guess should be eta times mean distance between particles:
-initial_h = np.ones(N) * phys.COUPLING_CONST * total_size / N**(1/3)
+initial_h = np.ones(N) * phys.COUPLING_CONST * total_size / N ** (1 / 3)
 
 #################
 # Defining Time #
@@ -87,8 +86,16 @@ initial_h = np.ones(N) * phys.COUPLING_CONST * total_size / N**(1/3)
 # https://spacemath.gsfc.nasa.gov/Grade35/10Page6.pdf
 total_time = 3e6
 # Defining Nt as an array, then going to run each simulation based on this
-#Nt = np.array([5,10,20,50,100])
-Nt = np.array([10])
+# Found out that there is a limit to the number of large time steps. Nt = 5 raises an error
+Nt = np.array([10,20,50,100])
+#Nt = np.array([10, 20]) # used for testing loop and plotting functionality
+# Nt = 10  -->  56s runtime
+# Nt = 20  --> 115s runtime
+# Nt = 50  --> 269s runtime
+# Nt = 100 --> 532s runtime
+# Overall runtime: 16 minutes and 12 seconds
+
+#Nt = np.array([10])
 
 #dt = 1e5 # initial test to see if any errors are found
 # running the simulation multiple times with smaller time steps to determine
@@ -110,20 +117,13 @@ print("L", L)
 print("time steps", Nt)
 print("Initial smooth length: ", initial_h[0])
 
-##############################
-# Setting up the Scatterplot #
-##############################
-
-plt.title("Total Energy over time, various dt")
-plt.xlabel("Time")
-plt.ylabel("Total Energy")
-
-
+energy_delta = np.zeros(len(Nt))
+stepper = 0  # steps through the energy_delta
 #####################################################
 # Running the simulation and collecting energy data #
 #####################################################
 for n in Nt:
-    t = np.linspace(0., total_time, n) # creates a time array of size n from 0 to total_time
+    t = np.linspace(0., total_time, n)  # creates a time array of size n from 0 to total_time
     total_energy = np.zeros(len(t))
     # run simulation
     start = time.time()
@@ -140,8 +140,39 @@ for n in Nt:
             pressure,
             density,
             h_arr[i, :])
+    energy_delta[stepper] = total_energy[-1] - total_energy[0]
+    print(f"{stepper},Energy delta for {n} steps is {energy_delta[stepper]}")
+    stepper += 1
     # plot energy over time
     plt.plot(t, total_energy, label=f"{n} steps")
-# show plot
-plt.savefig("Total Energy over times")
+print(Nt)
+print(energy_delta)
+
+# These will be used in the future. The issue is that total_energy is the last run of the
+# simulation and so it does not contain any data from any previous simulation runs.
+# That is, the total_energy contains information only from the simulation with 100 time steps
+#np.save("temp/Nt", Nt)
+#np.save("temp/energy_delta", energy_delta)
+#np.save("temp/total_energy", total_energy)
+
+##############################
+# Setting up the graph #
+##############################
+plt.title("Total Energy over time, various dt")
+plt.xlabel("Time")
+plt.ylabel("Total Energy")
+plt.grid()
+plt.legend()
+plt.savefig("Energy over time with different time steps.jpg")
+plt.show()
+
+#########################
+# Plotting Energy Delta #
+#########################
+plt.scatter(Nt, energy_delta)
+plt.title("Energy delta over time steps")
+plt.xlabel("Time Steps")
+plt.ylabel("Energy Delta")
+plt.grid()
+plt.savefig("Energy Delta over time steps.jpg")
 plt.show()

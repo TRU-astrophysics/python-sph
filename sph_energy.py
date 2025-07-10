@@ -175,9 +175,7 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
 
 def energy_rate_arr(position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr, omega_arr):
     energy_rate_array = np.zeros(position_arr.shape[0])
-
     for i in range(position_arr.shape[0]):
         energy_rate_array[i] = energy_rate(i, position_arr, velocity_arr, pressure_arr, density_arr, smoothlength_arr,
                                            omega_arr)
-
     return energy_rate_array
