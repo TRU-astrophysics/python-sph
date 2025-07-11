@@ -141,19 +141,14 @@ for n in Nt:
             density,
             h_arr[i, :])
     energy_delta[stepper] = total_energy[-1] - total_energy[0]
-    print(f"{stepper},Energy delta for {n} steps is {energy_delta[stepper]}")
     stepper += 1
     # plot energy over time
     plt.plot(t, total_energy, label=f"{n} steps")
-print(Nt)
-print(energy_delta)
+    np.save(f"temp/total_energy_{n}", total_energy)
 
-# These will be used in the future. The issue is that total_energy is the last run of the
-# simulation and so it does not contain any data from any previous simulation runs.
-# That is, the total_energy contains information only from the simulation with 100 time steps
-#np.save("temp/Nt", Nt)
-#np.save("temp/energy_delta", energy_delta)
-#np.save("temp/total_energy", total_energy)
+
+np.save("temp/Nt", Nt)
+np.save("temp/energy_delta", energy_delta)
 
 ##############################
 # Setting up the graph #

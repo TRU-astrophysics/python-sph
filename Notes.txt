@@ -17,3 +17,6 @@ outputs:
  I will store the energy changes into an array that will then be used to plot each total energy onto the same plot
  
  I might be able to get around the use of a total energy array and just plot between runs and then show the plot after the algorithm has completed each
+ 
+ I saved the number to time steps, energy delta, and total energy arrays I used to generate the plots. If needed these arrays can be used to regenerate the plots I generated. To regenerate the total energy plot, a time array will need to be created by using the linspace method I used in my test_script and then plot energy over time.
+
