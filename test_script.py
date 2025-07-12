@@ -87,7 +87,8 @@ initial_h = np.ones(N) * phys.COUPLING_CONST * total_size / N ** (1 / 3)
 total_time = 3e6
 # Defining Nt as an array, then going to run each simulation based on this
 # Found out that there is a limit to the number of large time steps. Nt = 5 raises an error
-Nt = np.array([10,20,50,100])
+Nt = np.array([10,20,50,100,200,500,1000])
+#Nt = np.array([10,20,50,100])
 #Nt = np.array([10, 20]) # used for testing loop and plotting functionality
 # Nt = 10  -->  56s runtime
 # Nt = 20  --> 115s runtime
@@ -107,15 +108,15 @@ Nt = np.array([10,20,50,100])
 ##################################
 # Showing all defined parameters #
 ##################################
-print("Total_mass", total_mass)
-print("Total_size", total_size)
-print("Total_time", total_time)
-print("T0", T0)
+#print("Total_mass", total_mass)
+#print("Total_size", total_size)
+#print("Total_time", total_time)
+#print("T0", T0)
 # print("dt", dt)
-print("N", N)
-print("L", L)
-print("time steps", Nt)
-print("Initial smooth length: ", initial_h[0])
+#print("N", N)
+#print("L", L)
+#print("time steps", Nt)
+#print("Initial smooth length: ", initial_h[0])
 
 energy_delta = np.zeros(len(Nt))
 stepper = 0  # steps through the energy_delta

@@ -49,10 +49,11 @@ def kinetic_energy(v_i):
 def grav_potential(i, position_arr, smoothlength_i):
     pot = 0
     for j in range(position_arr.shape[0]):
-        if i==j:
-            pot+=0
+        if i == j:
+            pot += 0 # this gets rid of NaN errors, removes self-gravitation
         else:
-            pot += phys.PARTICLE_MASS * grav.grav_kernal(phys.distance(position_arr[j], position_arr[i]), smoothlength_i)
+            pot += phys.PARTICLE_MASS * grav.grav_kernal(phys.distance(position_arr[j], position_arr[i]),
+                                                         smoothlength_i)
     return 0.5 * G * pot
 
 
@@ -108,7 +109,7 @@ def energy_evolve(j, position_arr, velocity_arr, energy_arr, pressure_arr, densi
 
     for i in range(velocity_arr.shape[0]):
         density_change += phys.PARTICLE_MASS * np.dot(velocity_arr[j] - velocity_arr[i],
-                                                 num.dellM4(position_arr[j], position_arr[i], smoothlength_j))
+                                                      num.dellM4(position_arr[j], position_arr[i], smoothlength_j))
 
     energy_change = pressure_arr[j] / density_arr[j] ** 2 * density_change
 
@@ -159,8 +160,8 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
 
         #d/dt of kappa
         viscosity_sum += 0.5 * (phys.PARTICLE_MASS * Pi(j, i, position_arr,
-                                                   velocity_arr, pressure_arr,
-                                                   density_arr, smoothlength_arr)
+                                                        velocity_arr, pressure_arr,
+                                                        density_arr, smoothlength_arr)
                                 * np.dot(vji, mean_dellM4))
         #* np.dot(velocity_arr[j], mean_dellM4))
 
