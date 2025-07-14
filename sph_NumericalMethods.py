@@ -17,8 +17,9 @@ INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
 
 DEFAULT_SMOOTHLENGTH = 2
 
-#SPH Specific Methods#
-
+########################
+# SPH Specific Methods #
+########################
 def M4(dist, smoothlength):
     q = dist / smoothlength
     w = 1 / (np.pi * smoothlength ** 3) * np.piecewise(q,
@@ -91,25 +92,9 @@ def zetaprime(density_j, omega_j, smoothlength_j):
     return (- 3 * density_j / smoothlength_j * (omega_j - 1)
             - 3 * mj * (phys.COUPLING_CONST / smoothlength_j) ** 3 / smoothlength_j)
 
-
-# Numerical Methods
-# creating a general bisecion method, will also make a generalized
-# Newton's Method
-def bisection(a,b,f):
-    h_a = a
-    h_b = b
-    i = 0
-    if f(h_a)*f(h_b)>0:
-        print("ERROR: root out of bounds")
-    
-    while i<BISECTION_ITERATION_LIMIT:
-        i +=1
-    #return 0
-    
-def newton():
-    return 0
-
-
+#####################
+# Numerical Methods #
+#####################
 # Bisection should perhaps be broken down into a series of smaller functions, like newton's method is. 
 def bisection_h(j, position_arr):
     h_a = INITIAL_BISECTION_SMOOTHLENGTH_A
@@ -169,6 +154,7 @@ def newton_smoothlength_while(j, position_arr, initial_smoothlength_j):
     print("WARNING: Failure to converge in newton_new_h.")
     return bisection_h(j, position_arr)
 
+# This method is incomplete, but not used
 def newton_smoothlength_recursive(j, position_arr, old_smoothlength_j, old_old_smoothlength_j=0):
     new_smoothlength_j = newton_smoothlength_iteration(j, position_arr, old_smoothlength_j)
     
@@ -202,9 +188,9 @@ def newton_smoothlength_arr(position_arr, old_smoothlength_arr):
     return smoothlength_arr
     
 
-######################################################################
-# Integration and Simulation
-######################################################################
+##############################
+# Integration and Simulation #
+##############################
 # Cossins 3.151
 def var_smoothlength_leapfrog(pos0, vel0, energy0, h0, dt):
     """

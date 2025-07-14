@@ -3,11 +3,15 @@ import sph_energy as erg
 import matplotlib.pyplot as plt
 import sph_physicalmethods as phys
 
-a1 = np.array([1,2,3])
-a2 = np.array([4,5])
-a3 = np.hstack((a1,a2))
-a4 = np.hstack((a3,a1))
-print(f"a1: {a1}")
-print(f"a2: {a2}")
-print(f"a3: {a3}")
-print(f"a4: {a4}")
+pos = np.load("temp/pos0 where viscosity_sum is negative.npy")
+
+N = len(pos[:,0])
+for i in range(N):
+    for j in range(N):
+        if i != j:
+            dist = phys.distance(pos[i,:],pos[j,:])
+            if dist==0:
+                print("zero distance found")
+            elif dist<=0:
+                print("negative distance found")
+print("Completed")

@@ -59,10 +59,11 @@ Nt = total_time/dt
 # https://en.wikipedia.org/wiki/Formation_and_evolution_of_the_Solar_System
 total_size = 2e5
 
-pos = (np.random.rand(N,3) - 0.5) * total_size
+#pos = (np.random.rand(N,3) - 0.5) * total_size
 # Saving initial positions for later use
-np.save("temp/pos0", pos)
+#np.save("temp/pos0", pos)
 #pos = np.load("temp/pos0.npy")
+pos = np.load("temp/pos0 where viscosity_sum is negative.npy")
 
 ################################
 # Defining Particle Velocities #
@@ -70,8 +71,8 @@ np.save("temp/pos0", pos)
 # Total angular momentum of solar system seems to be
 # L = 3.3212 x 10^45 kg m^2 s^-1 or
 # L = 2.3536 SM AU^2 / yr
-# L = 2.3536 #  Had to multiply by 100 to "see" it rotating.
-L = 0 # arbitrary, I am seeing only expansion, not contraction
+L = 2.3536 #  Had to multiply by 100 to "see" it rotating.
+#L = 0 # arbitrary, I am seeing only expansion, not contraction
 # Angular speed of a solid sphere of same size and mass.
 w = 5 * L / (2 * total_mass * total_size**2)
 

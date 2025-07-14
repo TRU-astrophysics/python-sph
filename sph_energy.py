@@ -34,12 +34,19 @@ K_BOLTZMANN = 3.0856e-61
 ADIABATIC_INDEX = 5 / 3
 
 
+'''
+inputs are scalar quantities for pressure and density
+outputs internal energy of the ith fluid element as a scalar quantity
+'''
 def internal_energy(pressure_i, density_i):
     denom = (ADIABATIC_INDEX - 1) * density_i
     u = pressure_i / denom
     return u
 
-
+'''
+Inputs: velocity vector quantity of the ith fluid element dim:(3)
+outputs: kinetic energy of the ith fluid element as a scala quantity
+'''
 def kinetic_energy(v_i):
     E_k = .5 * phys.PARTICLE_MASS * np.dot(v_i, v_i)
     return E_k
@@ -148,14 +155,19 @@ def energy_rate(j, position_arr, velocity_arr, pressure_arr, density_arr, smooth
                                         smoothlength_arr[j])
                              + num.dellM4(position_arr[j], position_arr[i],
                                           smoothlength_arr[i]))
+        '''
+        # Adding this for future testing
+        mean_dellM4 = (num.dellM4(position_arr[j], position_arr[i],
+                                        smoothlength_arr[j])
+                             + num.dellM4(position_arr[j], position_arr[i],
+                                          smoothlength_arr[i]))
+        '''
         # MF: I am unsure if we should have vj, vji or 0.5*vji here.
         # The thesis says vji, but I can't understand this result.
         # Using vji ensures energy only increase due to viscosity.
         # It also makes the overall magnitude of the energy rate due 
         # to viscosity smaller, and more in line with the "density_change"
         # term. I think we need a factor of 0.5 here though.
-        # JG: I found an oddity, not sure if it's this term. I am removing the 0.5 factor and
-        # seeing if this changes what I found
         # TODO: investigate.
 
         #d/dt of kappa
