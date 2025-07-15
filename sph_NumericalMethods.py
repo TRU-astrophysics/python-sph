@@ -196,6 +196,8 @@ def var_smoothlength_leapfrog(pos0, vel0, energy0, h0, dt):
     """
     Leap-frogging in the manner of equations 3.152 to 3.155 in Cossins.
     """
+    # TODO: need to add energy change as an output to track how much energy changed each step
+
     den0 =      phys.var_density_arr(h0)
     omega0 =    omega_arr(pos0, den0, h0)
     xi0 =       grav.xi_arr(den0, h0, pos0)
@@ -204,7 +206,7 @@ def var_smoothlength_leapfrog(pos0, vel0, energy0, h0, dt):
     acc0 =      phys.acceleration_arr(pos0, den0, vel0, press0, h0, omega0, xi0)
 
     # MF: Need to check memory usage and whether we need to overwrite
-    # the "0" arrays when writting the "mid" arrays, to save memory.
+    # the "0" arrays when writing the "mid" arrays, to save memory.
     pos_mid = pos0 + vel0 * 0.5 * dt
     vel_mid = vel0 + acc0 * 0.5 * dt
     energy_mid = energy0 + energy_rate0 * 0.5 * dt

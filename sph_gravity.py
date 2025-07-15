@@ -8,9 +8,9 @@ import sph_physicalmethods as phys
 #G = 4 * np.pi**2
 G = 39.4227
 
-
-# Gravity
-
+###########
+# Gravity #
+###########
 def grav_kernal(dist, smoothlength):
     """
     Cossins eq. 3.149

@@ -13,10 +13,9 @@ outputs:
  - energies: ndarray(Nt, N)
  - smoothlengths_with_time : ndarray(Nt, N)
  
- Need to run simulation multiple times, then calculate the total change in energy over time for each simulation
- I will store the energy changes into an array that will then be used to plot each total energy onto the same plot
- 
- I might be able to get around the use of a total energy array and just plot between runs and then show the plot after the algorithm has completed each
- 
- I saved the number to time steps, energy delta, and total energy arrays I used to generate the plots. If needed these arrays can be used to regenerate the plots I generated. To regenerate the total energy plot, a time array will need to be created by using the linspace method I used in my test_script and then plot energy over time.
+Total energy decreases over time
+Internal energy decreases significantly over time, error must be there
+I think energy rate is removing some energy. So I will add a line of code that allows for the output of energy removed from the system due to viscosity.
+Then I will add this to the total energy function
 
+I need to test if the total_energy function is equivalent to the individual energies being calculated in the loop
