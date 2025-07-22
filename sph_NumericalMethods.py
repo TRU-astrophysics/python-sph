@@ -32,8 +32,8 @@ def M4(dist, smoothlength):
 def M4_d1(dist, smoothlength):
     q = dist / smoothlength
     wp = 1 / (np.pi * smoothlength ** 4) * np.piecewise(q,
-                                                        [q >= 2, q >= 1 and q < 2, q < 1],
-                                                        [0, -0.75 * (2 - q) ** 2, 9 / 4 * q ** 2 - 3 * q])
+                                                [q >= 2, q >= 1 and q < 2, q < 1],
+                                                [0, -0.75 * (2 - q) ** 2, 9 / 4 * q ** 2 - 3 * q])
 
     return wp
 

@@ -1,8 +1,11 @@
+#
 # Using this script to set up all the relevant variables and collect the total energy
 # There will be no animations in this script
-# Generates a simple system to test SPH functionalities and gather simple
-# data for analysis
-# Other Dependencies
+# Generates a simple system to test SPH functionalities and gather simple data for analysis
+# Saves all parameters and outputs
+
+# Required Imports
+# Other Dependencies #
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -43,10 +46,10 @@ phys.PARTICLE_MASS = total_mass / N
 #total_size = 2e5
 total_size = 1e11
 
-pos = (np.random.rand(N,3) - 0.5) * total_size
+#pos = (np.random.rand(N,3) - 0.5) * total_size
 # Saving initial positions for later use
-np.save("temp/pos0", pos)
-#pos = np.load("temp/pos0.npy")
+#np.save("temp/pos0", pos)
+pos = np.load("temp/pos0.npy")
 
 ################################
 # Defining Particle Velocities #
@@ -72,7 +75,8 @@ vels = w * np.cross(np.array([0, 0, 1]), pos)
 
 # Initial Temperature
 # T0 = 10 # standard starting temperature
-T0 = 1  # for testing energy
+# T0 = 1  # for testing energy
+T0 = 0
 # Keep it uniform energy for now.
 engs = np.ones(N) * (1 / (phys.ADIABATIC_INDEX - 1) * erg.K_BOLTZMANN
                      * T0 / molecular_mass)
@@ -182,6 +186,11 @@ for i in range(len(t)):
 ###############
 # Saving data #
 ###############
+np.save("TestingParameters/pos", pos_arr)
+np.save("TestingParameters/vel", vel_arr)
+np.save("TestingParameters/int_erg", erg_arr)
+np.save("TestingParameters/smoothlen", h_arr)
+
 np.save("EnergyTestData/Gravitational_Potential", grav_pot)
 np.save("EnergyTestData/Kinetic_Energy", kin_erg)
 np.save("EnergyTestData/Internal_Energy", int_erg)

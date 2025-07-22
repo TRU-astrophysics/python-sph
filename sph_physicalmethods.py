@@ -65,6 +65,15 @@ def direction_i_j(rj, ri):
 def density_comp(j, i, position_arr, smoothlength_j):
     return PARTICLE_MASS * num.M4(distance(position_arr[j], position_arr[i]), smoothlength_j)
 
+'''
+inputs: 
+j - particle index
+position_arr - array with shape (100,3)
+smoothlength_j - scalar value
+
+outputs:
+density as a scalar
+'''
 def density(j, position_arr, smoothlength_j):
     density = 0
     
@@ -94,7 +103,13 @@ def var_density_arr(smoothlength_arr):
     
     return density_arr
 
-
+'''
+inputs:
+energy - scalar value
+density - scalar value
+outputs:
+internal energy as a scalar value
+'''
 def pressure(energy, density):
     return (ADIABATIC_INDEX - 1) * energy * density
 

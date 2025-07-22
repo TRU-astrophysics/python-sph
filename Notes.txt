@@ -12,10 +12,13 @@ outputs:
  - velocities: ndarray(Nt, N, 3)
  - energies: ndarray(Nt, N)
  - smoothlengths_with_time : ndarray(Nt, N)
- 
+
+Total energy gathered from my total_energy function in sph_energy is essentially the same as adding the gravitational potential energy, kinetic energy, and internal energy
+
 Total energy decreases over time
 Internal energy decreases significantly over time, error must be there
 I think energy rate is removing some energy. So I will add a line of code that allows for the output of energy removed from the system due to viscosity.
 Then I will add this to the total energy function
 
-I need to test if the total_energy function is equivalent to the individual energies being calculated in the loop
+Next steps are to see if either the pressure or density is increasing over time which shouldn't happen
+
