@@ -22,3 +22,22 @@ Then I will add this to the total energy function
 
 Next steps are to see if either the pressure or density is increasing over time which shouldn't happen
 
+For some reason, the program no longer runs from 2e5 size or smaller system
+
+bisection_h needs to be related to the current particles smooth length, I don't think the change in smooth lengths will be significant enough that the method will yield a different number than is known
+
+generate an animation with energies for both a contracting and expansion
+equation 5, try different dudt
+
+calculate dk and dphi
+
+3 things going on:
+bug in code causes wrong position and velocities
+k and phi are incorrectly calculated
+dudt is calculated wrong
+
+what is the expected dk vs actual dk
+
+turn off viscosity (Pi) by setting alpha_sph and beta_sph to zero*first
+
+try constant h

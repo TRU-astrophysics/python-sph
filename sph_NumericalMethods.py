@@ -12,8 +12,8 @@ INITIAL_NEWTON_SMOOTHELENGTH = 0.2
 # Bisection
 BISECTION_ITERATION_LIMIT = 100
 BISECTION_TOLERANCE = 1e-10
-INITIAL_BISECTION_SMOOTHLENGTH_A = 1e3
-INITIAL_BISECTION_SMOOTHLENGTH_B = 1e-3
+INITIAL_BISECTION_SMOOTHLENGTH_A = 1e-3
+INITIAL_BISECTION_SMOOTHLENGTH_B = 1e3
 
 DEFAULT_SMOOTHLENGTH = 2
 
@@ -96,11 +96,12 @@ def zetaprime(density_j, omega_j, smoothlength_j):
 # Numerical Methods #
 #####################
 # Bisection should perhaps be broken down into a series of smaller functions, like newton's method is. 
+# I also think that the initial bisection smooth lengths should be somewhat related to the
+# previous smooth length
 def bisection_h(j, position_arr):
     h_a = INITIAL_BISECTION_SMOOTHLENGTH_A
     h_b = INITIAL_BISECTION_SMOOTHLENGTH_B
     i = 0
-
     while i < BISECTION_ITERATION_LIMIT:
         density_a = phys.density(j, position_arr, h_a)
         zeta_a = zeta_j(h_a, density_a)
@@ -116,16 +117,13 @@ def bisection_h(j, position_arr):
         
         if np.abs(zeta_root) < BISECTION_TOLERANCE:
             return root_candidate
-        
         else: 
             if zeta_a * zeta_root < 0:
                 h_b = root_candidate
         
             elif zeta_b * zeta_root < 0:
                 h_a = root_candidate
-        
             i += 1
-        
     print("ERROR: Failure to converge in Bisection_new_h.")
         
 def newton_smoothlength_iteration(j, position_arr, old_smoothlength_j):
